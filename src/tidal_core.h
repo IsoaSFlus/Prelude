@@ -23,6 +23,7 @@ public:
 
     void queryAlbum();
     void startRequest(const QUrl &requestedUrl);
+    void sortResult();
     void printResult();
 
 private:

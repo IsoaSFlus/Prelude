@@ -41,6 +41,10 @@ void TidalCore::Tidal::queryAlbum()
             request_count++;
         }
     }
+    if (request_count == 0) {
+        sortResult();
+        printResult();
+    }
 //    std::cout << request_count << std::endl;
 }
 
@@ -51,6 +55,35 @@ void TidalCore::Tidal::startRequest(const QUrl &requestedUrl)
     qnr.setRawHeader(QByteArray("user-agent"), QByteArray("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"));
 
     qnam.get(qnr);
+}
+
+void TidalCore::Tidal::sortResult()
+{
+    auto my_greater = [](TidalCore::Album left, TidalCore::Album right) {
+        if (left.date.size() != 3 || right.date.size() != 3) {
+            std::cout << "network error!" << std::endl;
+            QCoreApplication::exit(0);
+        }
+        int l1 = left.date[0].toInt();
+        int l2 = left.date[1].toInt();
+        int l3 = left.date[2].toInt();
+        int r1 = right.date[0].toInt();
+        int r2 = right.date[1].toInt();
+        int r3 = right.date[2].toInt();
+        if (l1 == r1) {
+            if (l2 == r2) {
+                return l3 > r3;
+            } else {
+                return l2 > r2;
+            }
+        } else {
+            return l1 > r1;
+        }
+    };
+    for (auto a : albums_map) {
+        detail_albums.push_back(a.second);
+    }
+    std::sort(detail_albums.begin(), detail_albums.end(), my_greater);
 }
 
 void TidalCore::Tidal::printResult()
@@ -100,31 +133,7 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
         albums_map[album.aid] = album;
         finished_count++;
         if (finished_count == request_count) {
-            auto my_greater = [](TidalCore::Album left, TidalCore::Album right) {
-                if (left.date.size() != 3 || right.date.size() != 3) {
-                    std::cout << "network error!" << std::endl;
-                    QCoreApplication::exit(0);
-                }
-                int l1 = left.date[0].toInt();
-                int l2 = left.date[1].toInt();
-                int l3 = left.date[2].toInt();
-                int r1 = right.date[0].toInt();
-                int r2 = right.date[1].toInt();
-                int r3 = right.date[2].toInt();
-                if (l1 == r1) {
-                    if (l2 == r2) {
-                        return l3 > r3;
-                    } else {
-                        return l2 > r2;
-                    }
-                } else {
-                    return l1 > r1;
-                }
-            };
-            for (auto a : albums_map) {
-                detail_albums.push_back(a.second);
-            }
-            std::sort(detail_albums.begin(), detail_albums.end(), my_greater);
+            sortResult();
             printResult();
         }
     } else {
