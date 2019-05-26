@@ -10,8 +10,9 @@ namespace TidalCore {
 struct Album
 {
     uint aid;
-    QString title;
-    QByteArray cover;
+    std::string title;
+    std::string cover;
+    QStringList date;
 };
 
 class Tidal : public QObject {
@@ -20,12 +21,17 @@ class Tidal : public QObject {
 public:
     explicit Tidal(QObject *parent = nullptr);
 
+    void queryAlbum();
     void startRequest(const QUrl &requestedUrl);
+    void printResult();
 
 private:
     QNetworkAccessManager qnam;
     QByteArray response;
-    std::map<uint, QString> album;
+    std::map<uint, TidalCore::Album> albums_map;
+    std::vector<Album> detail_albums;
+    uint finished_count = 0;
+    uint request_count = 0;
 
 private slots:
     void httpFinished(QNetworkReply *reply);

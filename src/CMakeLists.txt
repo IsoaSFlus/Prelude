@@ -1,8 +1,8 @@
 set(qlp_file_SRCS
     main.cpp
     tidal_core.cpp
-    CJsonObject.cpp
-    cJSON.c
+    json/CJsonObject.cpp
+    json/cJSON.c
 )
 
 # qt5_add_resources(qlp_file_SRCS resource.qrc)
