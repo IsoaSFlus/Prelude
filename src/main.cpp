@@ -1,11 +1,15 @@
 #include <QtCore>
-#include "tidal_core.h"
+#include <QApplication>
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+    QApplication a(argc, argv);
+    QApplication::setApplicationName("Prelude");
+    QApplication::setApplicationVersion(PROJECT_VERSION);
 
-    TidalCore::Tidal t;
-    a.exec();
-    return 0;
+    MainWindow w;
+    w.setWindowTitle("Prelude");
+    w.show();
+    return a.exec();
 }

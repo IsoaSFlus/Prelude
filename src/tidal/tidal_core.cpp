@@ -10,19 +10,19 @@
 
 TidalCore::Tidal::Tidal(QObject *parent) : QObject(parent)
 {
+    connect(&qnam, &QNetworkAccessManager::finished, this, &Tidal::httpFinished);
+}
+
+void TidalCore::Tidal::search(QString keywords)
+{
     QUrl url("https://listen.tidal.com/v1/search");
     QUrlQuery query;
-    std::string keywords;
-    std::cout << "Input search string:";
-    std::getline(std::cin, keywords);
-    query.addQueryItem("query", QString::fromStdString(keywords));
+    query.addQueryItem("query", keywords);
     query.addQueryItem("limit", "9999");
     query.addQueryItem("offset", "0");
     query.addQueryItem("types", "ALBUMS,TRACKS");
     query.addQueryItem("countryCode", "US");
     url.setQuery(query);
-
-    connect(&qnam, &QNetworkAccessManager::finished, this, &Tidal::httpFinished);
     startRequest(url);
 }
 
@@ -43,7 +43,7 @@ void TidalCore::Tidal::queryAlbum()
     }
     if (request_count == 0) {
         sortResult();
-        printResult();
+//        printResult();
     }
 //    std::cout << request_count << std::endl;
 }
@@ -59,10 +59,11 @@ void TidalCore::Tidal::startRequest(const QUrl &requestedUrl)
 
 void TidalCore::Tidal::sortResult()
 {
-    auto my_greater = [](TidalCore::Album left, TidalCore::Album right) {
+    bool is_error = false;
+    auto my_greater = [&](TidalCore::Album left, TidalCore::Album right) {
         if (left.date.size() != 3 || right.date.size() != 3) {
-            std::cout << "network error!" << std::endl;
-            QCoreApplication::exit(0);
+            is_error = true;
+            return false;
         }
         int l1 = left.date[0].toInt();
         int l2 = left.date[1].toInt();
@@ -84,6 +85,12 @@ void TidalCore::Tidal::sortResult()
         detail_albums.push_back(a.second);
     }
     std::sort(detail_albums.begin(), detail_albums.end(), my_greater);
+    if (is_error == true) {
+        std::vector<TidalCore::Album> empty_album;
+        emit searchFinished(empty_album);
+    } else {
+        emit searchFinished(detail_albums);
+    }
 }
 
 void TidalCore::Tidal::printResult()
@@ -94,6 +101,14 @@ void TidalCore::Tidal::printResult()
         std::cout << a.aid << " " << a.title << " " << date << " " << cover << std::endl;
     }
     QCoreApplication::exit(0);
+}
+
+void TidalCore::Tidal::clear()
+{
+    albums_map.clear();
+    detail_albums.clear();
+    finished_count = 0;
+    request_count = 0;
 }
 
 void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
@@ -134,7 +149,7 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
         finished_count++;
         if (finished_count == request_count) {
             sortResult();
-            printResult();
+//            printResult();
         }
     } else {
         std::cout << "missed!" << std::endl;

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/Header.qml</file>
+        <file>qml/AlbumDelegate.qml</file>
+    </qresource>
+</RCC>
