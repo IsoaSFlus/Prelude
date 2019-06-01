@@ -2,17 +2,20 @@
 #define MAINWINDOW_H
 
 #include <QtGui>
+#include <QMainWindow>
 #include <QWidget>
 #include <QQuickWidget>
 
 #include "album_model.h"
 
-class MainWindow : public QWidget
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    virtual QSize sizeHint() const { return QSize(1920, 800); }
 signals:
 
 public slots:

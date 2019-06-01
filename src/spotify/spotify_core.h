@@ -25,6 +25,7 @@ public:
     explicit Spotify(QObject *parent = nullptr);
 
     void search(QString keywords);
+    void getToken();
     void queryAlbum();
     void nextPage(int offset);
     void startRequest(const QUrl &requestedUrl);
@@ -37,6 +38,10 @@ signals:
 
 private:
     QNetworkAccessManager* qnam = nullptr;
+    QNetworkAccessManager* token_nam = nullptr;
+    QTimer* token_lifetime;
+    int token_count = 0;
+    QByteArray token;
     std::set<std::string> albums_set;
     std::vector<Album> detail_albums;
     QString keywords;
@@ -49,6 +54,8 @@ private:
 
 private slots:
     void httpFinished(QNetworkReply *reply);
+    void getTokenFinished(QNetworkReply *reply);
+    void tokenTick();
 };
 
 }

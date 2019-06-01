@@ -3,5 +3,10 @@
         <file>qml/main.qml</file>
         <file>qml/Header.qml</file>
         <file>qml/AlbumDelegate.qml</file>
+        <file>qml/SearchPage.qml</file>
+        <file>qml/DetailPage.qml</file>
+        <file>artworks/cd.svg</file>
+        <file>artworks/default_cover.jpg</file>
+        <file>artworks/cd_large.svg</file>
     </qresource>
 </RCC>

@@ -3,8 +3,11 @@
 AlbumModel::AlbumModel(QObject *parent) : QObject(parent)
 {
     m_model = new QStandardItemModel(this);
+    m_track_model = new QStandardItemModel(this);
+    se = new SearchEngineCore::SearchEngine(this);
 
-    connect(&tidal, &TidalCore::Tidal::searchFinished, this, &AlbumModel::inputAlbumResults);
+    connect(se, &SearchEngineCore::SearchEngine::resultReady, this, &AlbumModel::inputAlbumResults);
+    connect(se, &SearchEngineCore::SearchEngine::findInTidalReady, this, &AlbumModel::handleTrackResults);
 }
 
 QStandardItemModel *AlbumModel::model() const
@@ -12,21 +15,47 @@ QStandardItemModel *AlbumModel::model() const
     return m_model;
 }
 
-void AlbumModel::search(QString keywords)
+QStandardItemModel *AlbumModel::track_model() const
 {
-    tidal.clear();
-    m_model->clear();
-    m_model->insertColumn(0);
-    tidal.search(keywords);
+    return m_track_model;
 }
 
-void AlbumModel::inputAlbumResults(std::vector<TidalCore::Album> albums)
+void AlbumModel::search(QString keywords)
 {
+    se->search(keywords);
+}
+
+void AlbumModel::getTracks(QString upc, QString title)
+{
+    qDebug() << "getting!" << upc << title;
+    if (title.size() > 20) {
+        title.resize(20);
+    }
+    se->findInTidal(upc.toStdString(), title.toStdString());
+}
+
+void AlbumModel::inputAlbumResults(std::map<QString, SearchEngineCore::Album> albums)
+{
+    m_model->clear();
+    m_model->insertColumn(0);
     for (auto album : albums) {
         const int new_row= m_model->rowCount();
-        QDate d(album.date[0].toInt(), album.date[1].toInt(), album.date[2].toInt());
-        const Album a(album.aid, QString::fromStdString(album.title), QString::fromStdString(album.cover), d);
+        const Album a(album.second.aid, album.second.title, album.second.cover, album.second.date, album.second.upc);
         m_model->insertRow(new_row);
         m_model->setData(m_model->index(new_row,0),QVariant::fromValue(a));
     }
+    emit dataFetched();
+}
+
+void AlbumModel::handleTrackResults(std::vector<TidalCore::Track> t, QString album_title, QString cover_large)
+{
+    m_track_model->clear();
+    m_track_model->insertColumn(0);
+    for (auto track : t) {
+        const int new_row= m_track_model->rowCount();
+        const Track t(QString::fromStdString(track.tid), QString::fromStdString(track.title), track.duration);
+        m_track_model->insertRow(new_row);
+        m_track_model->setData(m_track_model->index(new_row,0),QVariant::fromValue(t));
+    }
+    emit dataTrackFetched(album_title, cover_large);
 }

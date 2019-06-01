@@ -11,11 +11,19 @@
 SpotifyCore::Spotify::Spotify(QObject *parent) : QObject(parent)
 {
     qnam = new QNetworkAccessManager(this);
+    token_nam = new QNetworkAccessManager(this);
     connect(qnam, &QNetworkAccessManager::finished, this, &Spotify::httpFinished);
+    connect(token_nam, &QNetworkAccessManager::finished, this, &Spotify::getTokenFinished);
+
+    token_lifetime = new QTimer(this);
+    token_lifetime->setInterval(10000);
+    connect(token_lifetime, &QTimer::timeout, this, &Spotify::tokenTick);
+    getToken();
 }
 
 void SpotifyCore::Spotify::search(QString keywords)
 {
+    clear();
     this->keywords = keywords;
     QUrl url("https://api.spotify.com/v1/search");
     QUrlQuery query;
@@ -25,6 +33,17 @@ void SpotifyCore::Spotify::search(QString keywords)
     query.addQueryItem("type", "album,track");
     url.setQuery(query);
     startRequest(url);
+}
+
+void SpotifyCore::Spotify::getToken()
+{
+    QUrl url("https://accounts.spotify.com/api/token");
+    QNetworkRequest qnr(url);
+    QByteArray data;
+    data.append("grant_type=client_credentials");
+    qnr.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    qnr.setRawHeader(QByteArray("Authorization"), QByteArray("Basic Y2E1YTU4Zjk4ZTBkNGJjNmE2ZThhMmZkNWIzZTg5NWQ6MmY2NjVjOGIxYzQ1NGQ4YTlhYjkwNGJmMWU1M2VkMjg="));
+    token_nam->post(qnr, data);
 }
 
 void SpotifyCore::Spotify::queryAlbum()
@@ -51,7 +70,7 @@ void SpotifyCore::Spotify::nextPage(int offset)
 void SpotifyCore::Spotify::startRequest(const QUrl &requestedUrl)
 {
     QNetworkRequest qnr(requestedUrl);
-    qnr.setRawHeader(QByteArray("Authorization"), QByteArray("Bearer BQAV87nepxwECa0NCy09of1x7kjKA0ZcKuuhxFRuyoLXGTr_UFl6Qixg2UY5m0uvT6QZ8QcprDmj6Kk52-Y"));
+    qnr.setRawHeader(QByteArray("Authorization"), token);
     qnr.setRawHeader(QByteArray("user-agent"), QByteArray("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"));
     qnam->get(qnr);
 }
@@ -60,7 +79,6 @@ void SpotifyCore::Spotify::printResult()
 {
     for (auto a : detail_albums) {
         std::cout << a.aid << " " << a.upc << " " << a.cover << " " << a.label << std::endl;
-
     }
 }
 
@@ -82,16 +100,22 @@ void SpotifyCore::Spotify::clear()
 
 void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
 {
-
+    if (token.isEmpty()) {
+        emit searchFinished(detail_albums);
+        reply->deleteLater();
+        return;
+    }
     if (detail_request) {
         neb::CJsonObject json(reply->readAll().toStdString());
         SpotifyCore::Album album;
-        album.aid = json["id"].ToString();
-        album.title = json["name"].ToString();
-        album.upc = json["external_ids"]["upc"].ToString();
-        album.cover = json["images"][1]["url"].ToString();
-        album.label = json["label"].ToString();
-        album.date = QString::fromStdString(json["release_date"].ToString()).split('-');
+        std::string tmp;
+        json.Get("id", album.aid);
+        json.Get("name", album.title);
+        json["external_ids"].Get("upc", album.upc);
+        json["images"][1].Get("url", album.cover);
+        json.Get("label", album.label);
+        json.Get("release_date", tmp);
+        album.date = QString::fromStdString(tmp).split('-');
         if (album.date.size() < 3) {
             album.date << "01" << "01";
         }
@@ -124,6 +148,7 @@ void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
 
         int offset = 0;
         json["tracks"].Get("offset", offset);
+//        std::cout << offset << " " << total_albums << " " << total_tracks << std::endl;
         if (offset+50 >= total_albums && offset+50 >= total_tracks) {
             queryAlbum();
             detail_request = true;
@@ -132,4 +157,22 @@ void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
         }
     }
     reply->deleteLater();
+}
+
+void SpotifyCore::Spotify::getTokenFinished(QNetworkReply *reply)
+{
+    neb::CJsonObject json(reply->readAll().toStdString());
+    std::string tmp;
+    json.Get("access_token", tmp);
+    token = QByteArray("Bearer ") + QByteArray::fromStdString(tmp);
+    qDebug() << "token: " << token;
+}
+
+void SpotifyCore::Spotify::tokenTick()
+{
+    token_count++;
+    if (token_count == 180) {
+        token_count = 0;
+        getToken();
+    }
 }

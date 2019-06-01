@@ -4,6 +4,7 @@
 #include <QtCore>
 #include <QNetworkAccessManager>
 #include <map>
+#include <set>
 
 namespace TidalCore {
 
@@ -21,7 +22,7 @@ struct Track
 {
     std::string tid;
     std::string title;
-    std::string duration;
+    uint duration;
 };
 
 class Tidal : public QObject {
@@ -31,6 +32,7 @@ public:
     explicit Tidal(QObject *parent = nullptr);
 
     void search(QString keywords);
+    void searchByUPC(std::string upc, std::string title);
     void queryAlbum();
     void startRequest(const QUrl &requestedUrl);
     void sortResult();
@@ -39,11 +41,15 @@ public:
 
 signals:
     void searchFinished(std::vector<Album>);
+    void searchByUPCFinished(std::vector<Track>, std::string, std::string);
 
 private:
     QNetworkAccessManager qnam;
     std::map<uint, TidalCore::Album> albums_map;
     std::vector<Album> detail_albums;
+    bool is_search_upc = false;
+    bool is_search_upc_step2 = false;
+    std::string upc;
     uint finished_count = 0;
     uint request_count = 0;
 
