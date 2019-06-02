@@ -1,9 +1,8 @@
-import QtQuick 2.2
-
-import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 import QtQuick.Controls.Styles 1.4
-import QtGraphicalEffects 1.0
+import QtGraphicalEffects 1.12
 
 Rectangle {
     id: root
@@ -48,9 +47,11 @@ Rectangle {
 
         function unsetBusy() {
             blur.opacity = 0;
+            gv.enabled = true;
         }
         function handleTracksData(album_title, cover) {
             blur.opacity = 0;
+            gv.enabled = true;
             stack.push(detailPageComp, {"album_title": album_title, "cover_url": cover});
         }
     }
@@ -61,7 +62,12 @@ Rectangle {
         visible: opacity === 0 ? false : true
         id: blur
         anchors.fill: gv
-        radius: 30
+        radius: 70
+        layer.enabled: true
+        layer.effect: HueSaturation {
+            cached: true
+            lightness: 0.6
+        }
 
         Behavior on opacity {
             NumberAnimation { duration: 300 }
@@ -69,6 +75,8 @@ Rectangle {
 
         BusyIndicator {
             running: parent.visible
+            width: parent.height * 0.15
+            height: parent.height * 0.15
             anchors.centerIn: parent
         }
     }

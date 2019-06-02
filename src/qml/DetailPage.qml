@@ -1,9 +1,8 @@
-import QtQuick 2.2
-
-import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 import QtQuick.Controls.Styles 1.4
-import QtGraphicalEffects 1.0
+import QtGraphicalEffects 1.12
 
 Item {
     id: root
@@ -11,6 +10,8 @@ Item {
     property string cover_url: ""
     property bool back_ready: false
     property bool fore_ready: false
+
+    signal addAllTracksClicked(int index)
 
     Item {
         id: background
@@ -96,13 +97,22 @@ Item {
         }
     }
 
-    Button {
+    Action {
+        id: back_action
         text: "Back"
-        anchors.top: parent.top
-        anchors.left: parent.left
-        onClicked: {
+        icon.source: "qrc:///artworks/back.svg"
+        onTriggered: {
             stack.pop();
         }
+    }
+
+    IconButton {
+        id: back_button
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: parent.height * 0.07
+        height: parent.height * 0.07
+        action: back_action
     }
 
     RowLayout {
@@ -150,6 +160,43 @@ Item {
                         fore_ready = false;
                     }
                 }
+
+                Rectangle {
+                    id: cover_hover_layer
+                    width: parent.width
+                    height: parent.height
+                    color: "black"
+                    opacity: 0
+                    Behavior on opacity {
+                        NumberAnimation { duration: 300 }
+                    }
+                    MouseArea {
+                        id: ma
+                        hoverEnabled: true
+                        anchors.fill: parent
+                        onEntered: {
+                            parent.opacity = 0.6;
+                        }
+                        onExited: {
+                            parent.opacity = 0;
+                        }
+                        Action {
+                            id: add_all_action
+                            text: "Add all tracks"
+                            icon.source: "qrc:///artworks/add_small.svg"
+                            onTriggered: {
+                                album_model.addTracksToMPD(-1);
+                            }
+                        }
+                        IconButton {
+                            id: add_all_button
+                            width: parent.height * 0.2
+                            height: parent.height * 0.2
+                            action: add_all_action
+                            anchors.centerIn: parent
+                        }
+                    }
+                }
             }
         }
 
@@ -175,7 +222,7 @@ Item {
             ListView {
                 Layout.fillWidth: true
                 Layout.preferredHeight: root.height * 0.6
-//                clip: true
+                clip: true
                 model: album_model.track_model
                 delegate: Label {
                     width: parent.width

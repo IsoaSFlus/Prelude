@@ -115,8 +115,8 @@ void TidalCore::Tidal::sortResult()
     if (is_error == true) {
         std::vector<TidalCore::Album> empty_album;
         emit searchFinished(empty_album);
+        std::cout << "Tidal search failed!" << std::endl;
     } else {
-//        printResult();
         emit searchFinished(detail_albums);
     }
 }
@@ -147,21 +147,17 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
             std::vector<Track> tracks;
             neb::CJsonObject json(reply->readAll().toStdString());
             uint i = 0;
-            QStringList cmd;
             std::string album_title, cover;
             json["rows"][0]["modules"][0]["album"].Get("title", album_title);
             json["rows"][0]["modules"][0]["album"].Get("cover", cover);
-            cmd << "add";
             do {
                 TidalCore::Track track;
                 track.tid = json["rows"][1]["modules"][0]["pagedList"]["items"][i]["item"]["id"].ToString();
                 json["rows"][1]["modules"][0]["pagedList"]["items"][i]["item"].Get("title", track.title);
                 json["rows"][1]["modules"][0]["pagedList"]["items"][i]["item"].Get("duration", track.duration);
-                std::cout << track.tid << "-" << track.title << std::endl;
-                cmd.append(QString("tidal://track/") + QString::fromStdString(track.tid));
+//                std::cout << track.tid << "-" << track.title << std::endl;
                 tracks.push_back(track);
             } while (!json["rows"][1]["modules"][0]["pagedList"]["items"][++i].IsEmpty());
-            QProcess::execute("mpc", cmd);
             emit searchByUPCFinished(tracks, album_title, cover);
         } else {
             neb::CJsonObject json(reply->readAll().toStdString());
@@ -235,7 +231,6 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
             finished_count++;
             if (finished_count == request_count) {
                 sortResult();
-    //            printResult();
             }
         } else {
             std::cout << "missed!" << std::endl;

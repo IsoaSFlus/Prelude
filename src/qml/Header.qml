@@ -1,9 +1,8 @@
-import QtQuick 2.2
-
-import QtQuick.Layouts 1.1
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 import QtQuick.Controls.Styles 1.4
-import QtGraphicalEffects 1.0
+import QtGraphicalEffects 1.12
 
 
 Rectangle {
@@ -42,6 +41,7 @@ Rectangle {
             onClicked: {
                 search_clicked(tf.text);
                 blur.opacity = 1;
+                gv.enabled = false;
             }
         }
     }

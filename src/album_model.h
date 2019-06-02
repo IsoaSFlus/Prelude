@@ -104,6 +104,7 @@ signals:
 public slots:
     void search(QString keywords);
     void getTracks(QString upc, QString title);
+    void addTracksToMPD(int index);
 
 private:
     QStandardItemModel* m_model;

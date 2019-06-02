@@ -8,5 +8,9 @@
         <file>artworks/cd.svg</file>
         <file>artworks/default_cover.jpg</file>
         <file>artworks/cd_large.svg</file>
+        <file>qml/IconButton.qml</file>
+        <file>artworks/back.svg</file>
+        <file>artworks/add_small.svg</file>
+        <file>artworks/add_large.svg</file>
     </qresource>
 </RCC>

@@ -34,6 +34,30 @@ void AlbumModel::getTracks(QString upc, QString title)
     se->findInTidal(upc.toStdString(), title.toStdString());
 }
 
+void AlbumModel::addTracksToMPD(int index)
+{
+    QStandardItem* item = nullptr;
+    if (index == -1) {
+        bool flag = true;
+        int i = 0;
+        QStringList cmd;
+        cmd << "add";
+        while (flag) {
+            item = m_track_model->item(i, 0);
+            if (item != nullptr) {
+                Track t = item->data(Qt::DisplayRole).value<Track>();
+                cmd.append(QString("tidal://track/") + t.id());
+                i++;
+            } else {
+                flag = false;
+            }
+        }
+        QProcess::execute("mpc", cmd);
+    } else {
+
+    }
+}
+
 void AlbumModel::inputAlbumResults(std::map<QString, SearchEngineCore::Album> albums)
 {
     m_model->clear();
