@@ -10,7 +10,8 @@
 
 TidalCore::Tidal::Tidal(QObject *parent) : QObject(parent)
 {
-    connect(&qnam, &QNetworkAccessManager::finished, this, &Tidal::httpFinished);
+    qnam = new QNetworkAccessManager(this);
+    connect(qnam, &QNetworkAccessManager::finished, this, &Tidal::httpFinished);
 }
 
 void TidalCore::Tidal::search(QString keywords)
@@ -81,14 +82,16 @@ void TidalCore::Tidal::startRequest(const QUrl &requestedUrl)
     qnr.setRawHeader(QByteArray("x-tidal-token"), QByteArray("CzET4vdadNUFQ5JU"));
     qnr.setRawHeader(QByteArray("user-agent"), QByteArray("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"));
 
-    qnam.get(qnr);
+    qnam->get(qnr);
 }
 
 void TidalCore::Tidal::sortResult()
 {
     bool is_error = false;
     auto my_greater = [&](TidalCore::Album left, TidalCore::Album right) {
-        if (left.date.size() != 3 || right.date.size() != 3) {
+        if (left.date.size() < 3 || right.date.size() < 3) {
+//            std::cout << left.aid << " " << left.title  << " " << left.date.size()  <<std::endl;
+//            std::cout << right.aid << " " << right.title  << " " << right.date.size()  << std::endl;
             is_error = true;
             return false;
         }
@@ -109,6 +112,9 @@ void TidalCore::Tidal::sortResult()
         }
     };
     for (auto a : albums_map) {
+        if (a.second.date.size() < 3) {
+            continue;
+        }
         detail_albums.push_back(a.second);
     }
     std::sort(detail_albums.begin(), detail_albums.end(), my_greater);
@@ -132,6 +138,10 @@ void TidalCore::Tidal::printResult()
 
 void TidalCore::Tidal::clear()
 {
+    qnam->disconnect();
+    qnam->deleteLater();
+    qnam = new QNetworkAccessManager(this);
+    connect(qnam, &QNetworkAccessManager::finished, this, &Tidal::httpFinished);
     albums_map.clear();
     detail_albums.clear();
     is_search_upc = false;
@@ -191,6 +201,9 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
             neb::CJsonObject json(reply->readAll().toStdString());
             json["albums"].Get("totalNumberOfItems", item_num);
             for (uint i = 0; i < item_num; i++) {
+                if (json["albums"]["items"][i]["explicit"].ToString().compare("true") == 0) {
+                    continue;
+                }
                 TidalCore::Album album;
                 json["albums"]["items"][i].Get("id" , album.aid);
                 json["albums"]["items"][i].Get("title", album.title);
@@ -216,6 +229,9 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
             std::string tmp;
             json["albums"].Get("totalNumberOfItems", item_num);
             for (uint i = 0; i < item_num; i++) {
+                if (json["albums"]["items"][i]["explicit"].ToString().compare("true") == 0) {
+                    continue;
+                }
                 json["albums"]["items"][i].Get("id", aid);
                 if (albums_map.find(aid) != albums_map.end()) {
                     TidalCore::Album album;

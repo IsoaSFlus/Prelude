@@ -84,7 +84,8 @@ void SpotifyCore::Spotify::printResult()
 
 void SpotifyCore::Spotify::clear()
 {
-    delete qnam;
+    qnam->disconnect();
+    qnam->deleteLater();
     qnam = new QNetworkAccessManager(this);
     connect(qnam, &QNetworkAccessManager::finished, this, &Spotify::httpFinished);
     albums_set.clear();

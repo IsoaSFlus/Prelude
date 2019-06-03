@@ -63,6 +63,7 @@ Rectangle {
         id: blur
         anchors.fill: gv
         radius: 70
+        transparentBorder: false
         layer.enabled: true
         layer.effect: HueSaturation {
             cached: true

@@ -44,7 +44,7 @@ signals:
     void searchByUPCFinished(std::vector<Track>, std::string, std::string);
 
 private:
-    QNetworkAccessManager qnam;
+    QNetworkAccessManager* qnam;
     std::map<uint, TidalCore::Album> albums_map;
     std::vector<Album> detail_albums;
     bool is_search_upc = false;
