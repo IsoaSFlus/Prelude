@@ -6,6 +6,7 @@
 #include <QtGui/QtGui>
 
 #include "search_engine.h"
+#include "album.h"
 
 class Album
 {
@@ -17,7 +18,7 @@ class Album
     Q_PROPERTY(QString id READ id)
 
 public:
-    Album(QString& id, QString title, QString cover, QDate& date, QString upc) {
+    Album(QString id, QString title, QString cover, QDate date, QString upc) {
         m_date = date;
         m_id = id;
         m_cover = cover;
@@ -112,7 +113,7 @@ private:
     SearchEngineCore::SearchEngine* se;
 
 private slots:
-    void inputAlbumResults(std::map<QString, SearchEngineCore::Album> albums);
+    void inputAlbumResults();
     void handleTrackResults(std::vector<TidalCore::Track> t, QString album_title, QString cover_large);
 };
 

@@ -3,20 +3,20 @@
 
 #include <QtCore>
 #include <QNetworkAccessManager>
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace SpotifyCore {
 
-struct Album
-{
-    std::string aid;
-    std::string title;
-    std::string cover;
-    std::string label;
-    std::string upc;
-    QStringList date;
-};
+//struct Album
+//{
+//    std::string aid;
+//    std::string title;
+//    std::string cover;
+//    std::string label;
+//    std::string upc;
+//    QStringList date;
+//};
 
 class Spotify : public QObject
 {
@@ -29,33 +29,30 @@ public:
     void queryAlbum();
     void nextPage(int offset);
     void startRequest(const QUrl &requestedUrl);
-    void printResult();
-    void sortResult();
+//    void printResult();
+//    void sortResult();
     void clear();
 
 signals:
-    void searchFinished(std::vector<Album>);
+//    void searchFinished(std::vector<Album>);
 
 private:
     QNetworkAccessManager* qnam = nullptr;
     QNetworkAccessManager* token_nam = nullptr;
-    QTimer* token_lifetime;
-    int token_count = 0;
+    QDateTime token_datetime;
     QByteArray token;
-    std::set<std::string> albums_set;
-    std::vector<Album> detail_albums;
+    std::unordered_set<std::string> unchecked_albums;
     QString keywords;
     bool first_request = true;
     bool detail_request = false;
     uint finished_count = 0;
-    uint request_count = 0;
+//    uint request_count = 0;
     int total_tracks = 0;
     int total_albums = 0;
 
 private slots:
     void httpFinished(QNetworkReply *reply);
     void getTokenFinished(QNetworkReply *reply);
-    void tokenTick();
 };
 
 }

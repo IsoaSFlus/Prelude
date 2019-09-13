@@ -3,20 +3,20 @@
 
 #include <QtCore>
 #include <QNetworkAccessManager>
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace TidalCore {
 
-struct Album
-{
-    uint aid;
-    std::string title;
-    std::string cover;
-    std::string label;
-    std::string upc;
-    QStringList date;
-};
+//struct Album
+//{
+//    uint aid;
+//    std::string title;
+//    std::string cover;
+//    std::string label;
+//    std::string upc;
+//    QStringList date;
+//};
 
 struct Track
 {
@@ -40,15 +40,19 @@ public:
     void clear();
 
 signals:
-    void searchFinished(std::vector<Album>);
+//    void searchFinished(std::vector<Album>);
     void searchByUPCFinished(std::vector<Track>, std::string, std::string);
 
 private:
     QNetworkAccessManager* qnam;
-    std::map<uint, TidalCore::Album> albums_map;
-    std::vector<Album> detail_albums;
+//    std::map<uint, TidalCore::Album> albums_map;
+//    std::vector<Album> detail_albums;
+    std::unordered_set<int> detail_albums;
+    std::unordered_map<int, std::string> unchecked_albums; // aid, title
     bool is_search_upc = false;
     bool is_search_upc_step2 = false;
+    bool is_search_step1 = true;
+    bool is_search_step2 = false;
     std::string upc;
     uint finished_count = 0;
     uint request_count = 0;

@@ -7,6 +7,7 @@
 #include <QQuickWidget>
 
 #include "album_model.h"
+#include "mpd/mpd_client.h"
 
 class MainWindow : public QMainWindow
 {
@@ -23,6 +24,7 @@ public slots:
 private:
     QQuickWidget* root_qml = nullptr;
     AlbumModel* album_model = nullptr;
+    MPDClient* mpd_client = nullptr;
 };
 
 #endif // MAINWINDOW_H

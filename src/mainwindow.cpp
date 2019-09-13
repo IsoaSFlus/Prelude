@@ -22,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     QObject::connect(album_model, SIGNAL(dataTrackFetched(QVariant, QVariant)), gv, SLOT(handleTracksData(QVariant, QVariant)));
 
     setCentralWidget(root_qml);
+
+    mpd_client = new MPDClient(this);
 }
 
 MainWindow::~MainWindow()

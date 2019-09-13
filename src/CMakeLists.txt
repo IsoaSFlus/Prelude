@@ -1,12 +1,14 @@
 set(qlp_file_SRCS
     main.cpp
     mainwindow.cpp
+    album.cpp
     album_model.cpp
     search_engine.cpp
     tidal/tidal_core.cpp
     spotify/spotify_core.cpp
     json/CJsonObject.cpp
     json/cJSON.c
+    mpd/mpd_client.cpp
 )
 
 qt5_add_resources(qlp_file_SRCS resource.qrc)
@@ -19,6 +21,7 @@ target_link_libraries(prelude
   Qt5::Widgets
   Qt5::QuickWidgets
   Qt5::QuickControls2
+  -lmpdclient
 )
 
 

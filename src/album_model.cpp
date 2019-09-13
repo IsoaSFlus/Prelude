@@ -1,12 +1,13 @@
 #include "album_model.h"
 
+
 AlbumModel::AlbumModel(QObject *parent) : QObject(parent)
 {
     m_model = new QStandardItemModel(this);
     m_track_model = new QStandardItemModel(this);
     se = new SearchEngineCore::SearchEngine(this);
 
-    connect(se, &SearchEngineCore::SearchEngine::resultReady, this, &AlbumModel::inputAlbumResults);
+    connect(&AlbumCore::Album::getInstance(), &AlbumCore::Album::searchFinished, this, &AlbumModel::inputAlbumResults);
     connect(se, &SearchEngineCore::SearchEngine::findInTidalReady, this, &AlbumModel::handleTrackResults);
 }
 
@@ -58,16 +59,17 @@ void AlbumModel::addTracksToMPD(int index)
     }
 }
 
-void AlbumModel::inputAlbumResults(std::map<QString, SearchEngineCore::Album> albums)
+void AlbumModel::inputAlbumResults()
 {
     m_model->clear();
     m_model->insertColumn(0);
-    for (auto album : albums) {
+    for (const auto& album : AlbumCore::Album::getInstance().getAlbums()) {
         const int new_row= m_model->rowCount();
         const Album a(album.second.aid, album.second.title, album.second.cover, album.second.date, album.second.upc);
         m_model->insertRow(new_row);
         m_model->setData(m_model->index(new_row,0),QVariant::fromValue(a));
     }
+    AlbumCore::Album::getInstance().clear();
     emit dataFetched();
 }
 
