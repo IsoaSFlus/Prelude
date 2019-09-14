@@ -6,7 +6,7 @@ import QtGraphicalEffects 1.12
 
 Rectangle {
     id: root
-    width: 340; height: 360
+    width: 340; height: 380
     radius: 4
     border.color: "transparent"
     border.width: 1
@@ -72,6 +72,20 @@ Rectangle {
         height: 55
         horizontalAlignment: Text.AlignHCenter
         text: model.display.title
+        wrapMode: Text.WordWrap
+        elide: Text.ElideRight
+    }
+
+    Label {
+        anchors {
+            top: title.bottom
+            horizontalCenter: parent.horizontalCenter
+        }
+        id: date
+        width: 320
+        height: 20
+        horizontalAlignment: Text.AlignHCenter
+        text: model.display.date.toLocaleString(Qt.locale(), "yyyy")
         wrapMode: Text.WordWrap
         elide: Text.ElideRight
     }

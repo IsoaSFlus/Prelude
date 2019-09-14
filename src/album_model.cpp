@@ -63,12 +63,15 @@ void AlbumModel::inputAlbumResults()
 {
     m_model->clear();
     m_model->insertColumn(0);
+    m_model->insertColumn(1);
     for (const auto& album : AlbumCore::Album::getInstance().getAlbums()) {
         const int new_row= m_model->rowCount();
         const Album a(album.second.aid, album.second.title, album.second.cover, album.second.date, album.second.upc);
         m_model->insertRow(new_row);
         m_model->setData(m_model->index(new_row,0),QVariant::fromValue(a));
+        m_model->setData(m_model->index(new_row,1),QVariant::fromValue(album.second.date));
     }
+    m_model->sort(1, Qt::DescendingOrder);
     AlbumCore::Album::getInstance().clear();
     emit dataFetched();
 }
