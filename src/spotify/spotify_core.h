@@ -7,17 +7,6 @@
 #include <unordered_set>
 
 namespace SpotifyCore {
-
-//struct Album
-//{
-//    std::string aid;
-//    std::string title;
-//    std::string cover;
-//    std::string label;
-//    std::string upc;
-//    QStringList date;
-//};
-
 class Spotify : public QObject
 {
     Q_OBJECT
@@ -34,7 +23,7 @@ public:
     void clear();
 
 signals:
-//    void searchFinished(std::vector<Album>);
+    void searchFinished(uint mask);
 
 private:
     QNetworkAccessManager* qnam = nullptr;

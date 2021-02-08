@@ -6,88 +6,87 @@ import QtGraphicalEffects 1.12
 
 Rectangle {
     id: root
-    width: 340; height: 380
+    width: 340; height: 410
     radius: 4
     border.color: "transparent"
     border.width: 1
 
-    Image {
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top:parent.top
-            topMargin: 4
-        }
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+        Rectangle {
+            Layout.topMargin: 4
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: 320
+            Layout.preferredHeight: 320
+            Image {
+                anchors.fill: parent
 
-        visible: opacity === 0 ? false : true
+                visible: opacity === 0 ? false : true
 
-        Behavior on opacity {
-            NumberAnimation { duration: 300 }
-        }
+                Behavior on opacity {
+                    NumberAnimation { duration: 300 }
+                }
 
-        fillMode: Image.PreserveAspectFit
-        sourceSize.height: 300
-        sourceSize.width: 300
+                fillMode: Image.PreserveAspectFit
+                sourceSize.height: 320
+                sourceSize.width: 320
 
-        id: img_default
-        asynchronous: true
-        source: "qrc:///artworks/cd.svg"
-    }
+                id: img_default
+                asynchronous: true
+                source: "qrc:///artworks/cd.svg"
+            }
 
-    Image {
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top:parent.top
-            topMargin: 4
-        }
+            Image {
+                anchors.fill: parent
 
-        Behavior on opacity {
-            NumberAnimation { duration: 300 }
-        }
+                Behavior on opacity {
+                    NumberAnimation { duration: 300 }
+                }
 
-        opacity: 0
-        fillMode: Image.PreserveAspectFit
-        width: 300
-        height: 300
-        id: img
-        asynchronous: true
-        source: model.display.cover
-        onStatusChanged: {
-            if (img.status === Image.Ready) {
-                img.opacity = 1;
-                img_default.opacity = 0;
-            } else {
-                img.opacity = 0;
-                img_default.opacity = 1;
+                opacity: 0
+                fillMode: Image.PreserveAspectFit
+                width: 320
+                height: 320
+                id: img
+                asynchronous: true
+                source: model.display.cover
+                onStatusChanged: {
+                    if (img.status === Image.Ready) {
+                        img.opacity = 1;
+                        img_default.opacity = 0;
+                    } else {
+                        img.opacity = 0;
+                        img_default.opacity = 1;
+                    }
+                }
             }
         }
-    }
 
-    Label {
-        anchors {
-            top: img.bottom
-            horizontalCenter: parent.horizontalCenter
-        }
-        id: title
-        width: 320
-        height: 55
-        horizontalAlignment: Text.AlignHCenter
-        text: model.display.title
-        wrapMode: Text.WordWrap
-        elide: Text.ElideRight
-    }
 
-    Label {
-        anchors {
-            top: title.bottom
-            horizontalCenter: parent.horizontalCenter
+        Label {
+            Layout.preferredWidth: 320
+            Layout.fillHeight: true
+            id: title
+            maximumLineCount: 2
+            horizontalAlignment: Text.AlignHCenter
+            text: model.display.title
+            wrapMode: Text.WordWrap
+            elide: Text.ElideRight
         }
-        id: date
-        width: 320
-        height: 20
-        horizontalAlignment: Text.AlignHCenter
-        text: model.display.date.toLocaleString(Qt.locale(), "yyyy")
-        wrapMode: Text.WordWrap
-        elide: Text.ElideRight
+
+        Label {
+            maximumLineCount: 1
+            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: 320
+            Layout.preferredHeight: 22
+            id: date
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignTop
+            text: model.display.date.toLocaleString(Qt.locale(), "yyyy") + (model.display.hires ? "-HiRes" : "")
+            wrapMode: Text.WordWrap
+            elide: Text.ElideRight
+        }
     }
 
     MouseArea {

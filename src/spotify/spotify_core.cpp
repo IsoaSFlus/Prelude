@@ -37,6 +37,8 @@ void SpotifyCore::Spotify::search(QString keywords)
     query.addQueryItem("limit", "50");
     query.addQueryItem("offset", "0");
     query.addQueryItem("type", "album,track");
+    query.addQueryItem("market", "HK");
+//    query.addQueryItem("market", "JP");
     url.setQuery(query);
     startRequest(url);
 }
@@ -48,14 +50,14 @@ void SpotifyCore::Spotify::getToken()
     QByteArray data;
     data.append("grant_type=client_credentials");
     qnr.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    qnr.setRawHeader(QByteArray("Authorization"), QByteArray("Basic Y2E1YTU4Zjk4ZTBkNGJjNmE2ZThhMmZkNWIzZTg5NWQ6MmY2NjVjOGIxYzQ1NGQ4YTlhYjkwNGJmMWU1M2VkMjg="));
+    qnr.setRawHeader(QByteArray("Authorization"), QByteArray("Basic Y2E1YTU4Zjk4ZTBkNGJjNmE2ZThhMmZkNWIzZTg5NWQ6YWJjZTQzZDllNmNkNDZhOTgyNDFlZTI1NDFhZWZjMWU="));
     token_nam->post(qnr, data);
 }
 
 void SpotifyCore::Spotify::queryAlbum()
 {
     if (unchecked_albums.size() == 0) {
-        AlbumCore::Album::getInstance().setSpotifyFinished();
+        emit searchFinished(0x01);
         return;
     }
     for (auto a : unchecked_albums) {
@@ -116,7 +118,7 @@ void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
 //        return;
 //    }
     if (reply->error() != QNetworkReply::NoError) {
-        AlbumCore::Album::getInstance().setSpotifyFinished();
+        emit searchFinished(0x01);
         clear();
         qDebug() << "Spotify search error: " << reply->error();
         reply->deleteLater();
@@ -131,6 +133,9 @@ void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
         json.Get("name", tmp);
         ai.title = QString::fromStdString(tmp);
         json["external_ids"].Get("upc", tmp);
+        while (tmp.length() < 15) {
+            tmp.insert(0, 1, '0');
+        }
         ai.upc = QString::fromStdString(tmp);
         json["images"][1].Get("url",tmp);
         ai.cover = QString::fromStdString(tmp);
@@ -142,10 +147,10 @@ void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
             tmpsl << "01" << "01";
         }
         ai.date = QDate(tmpsl[0].toInt(), tmpsl[1].toInt(), tmpsl[2].toInt());
-        AlbumCore::Album::getInstance().addAlbumItem(ai);
+        AlbumCore::Album::getInstance().addAlbumItem(ai, 1);
         finished_count++;
         if (finished_count >= unchecked_albums.size()) {
-            AlbumCore::Album::getInstance().setSpotifyFinished();
+            emit searchFinished(0x01);
         }
     } else {
         neb::CJsonObject json(reply->readAll().toStdString());
@@ -186,7 +191,7 @@ void SpotifyCore::Spotify::httpFinished(QNetworkReply *reply)
 void SpotifyCore::Spotify::getTokenFinished(QNetworkReply *reply)
 {
     if (reply->error() != QNetworkReply::NoError) {
-        AlbumCore::Album::getInstance().setSpotifyFinished();
+        emit searchFinished(0x01);
         clear();
         qDebug() << "Cannot get spotify token: " << reply->error();
         reply->deleteLater();

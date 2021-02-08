@@ -12,5 +12,12 @@
         <file>artworks/back.svg</file>
         <file>artworks/add_small.svg</file>
         <file>artworks/add_large.svg</file>
+        <file>qml/PIconTabButton.qml</file>
+        <file>qml/PTabBar.qml</file>
+        <file>artworks/playing.svg</file>
+        <file>artworks/search.svg</file>
+        <file>artworks/search_checked.svg</file>
+        <file>artworks/playing_checked.svg</file>
+        <file>artworks/hires.jpg</file>
     </qresource>
 </RCC>

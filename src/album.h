@@ -4,14 +4,6 @@
 #include <QtCore>
 #include <unordered_map>
 
-namespace std {
-  template<> struct hash<QString> {
-    std::size_t operator()(const QString& s) const {
-      return qHash(s);
-    }
-  };
-}
-
 namespace AlbumCore {
 
 struct AlbumItem
@@ -23,6 +15,14 @@ struct AlbumItem
     QString label;
     QString upc;
     QDate date;
+    bool hires = false;
+};
+
+struct Track
+{
+    std::string tid;
+    std::string title;
+    uint duration;
 };
 
 class Album : public QObject
@@ -32,8 +32,6 @@ private:
     Album();
     ~Album();
 
-    uint config_mask = 3; // bit 1 spotify bit 2 tidal
-    uint finished_mask = 0;
     std::unordered_map<QString, AlbumItem> albums; // upc and album info
 
 signals:
@@ -45,10 +43,8 @@ public:
         static Album instance;
         return instance;
     }
-    void addAlbumItem(AlbumItem& ai);
+    void addAlbumItem(AlbumItem& ai, int from = 0); // 0 for tidal 1 for spotify
     const std::unordered_map<QString, AlbumItem>& getAlbums() const;
-    void setSpotifyFinished();
-    void setTidalFinished();
     void clear();
 };
 }

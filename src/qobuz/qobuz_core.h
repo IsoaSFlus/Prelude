@@ -1,20 +1,20 @@
-#ifndef TIDAL_CORE_H
-#define TIDAL_CORE_H
+#ifndef QOBUZ_CORE_H
+#define QOBUZ_CORE_H
 
-#include <QtCore>
 #include <QNetworkAccessManager>
 #include <unordered_map>
 #include <unordered_set>
 
 #include "album.h"
 
-namespace TidalCore {
 
-class Tidal : public QObject {
+namespace QobuzCore {
+
+class Qobuz : public QObject
+{
     Q_OBJECT
-
 public:
-    explicit Tidal(QObject *parent = nullptr);
+    explicit Qobuz(QObject *parent = nullptr);
 
     void search(QString keywords);
     void searchByUPC(QString upc, QString title);
@@ -25,30 +25,21 @@ public:
     void clear();
 
 signals:
-    void searchFinished(uint mask);
     void searchByUPCFinished(std::vector<AlbumCore::Track>, std::string, std::string);
+    void searchFinished(uint mask);
 
 private:
     QNetworkAccessManager* qnam;
-//    std::map<uint, TidalCore::Album> albums_map;
-//    std::vector<Album> detail_albums;
     std::unordered_set<int> detail_albums;
-    std::unordered_map<int, std::string> unchecked_albums; // aid, title
     bool is_search_upc = false;
     bool is_search_upc_step2 = false;
-    bool is_search_step1 = true;
-    bool is_search_step2 = false;
+    QString upc_search_title;
     std::string upc;
-    uint finished_count = 0;
-    uint request_count = 0;
+    int current_page = 0;
 
-private slots:
     void httpFinished(QNetworkReply *reply);
-//    void httpReadyRead();
-
+    bool compareUPC(QString a, QString b);
 };
 
 }
-
-
-#endif // TIDAL_CORE_H
+#endif // QOBUZ_CORE_H

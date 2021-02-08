@@ -29,14 +29,21 @@ void TidalCore::Tidal::search(QString keywords)
     startRequest(url);
 }
 
-void TidalCore::Tidal::searchByUPC(std::string upc, std::string title)
+void TidalCore::Tidal::searchByUPC(QString upc, QString title)
 {
     clear();
     is_search_upc = true;
-    this->upc = upc;
+    this->upc = upc.toStdString();
     QUrl url("https://listen.tidal.com/v1/search");
     QUrlQuery query;
-    query.addQueryItem("query", QString::fromStdString(title));
+//    title.remove('"');
+    if (title.indexOf(' ', 25) == -1) {
+        query.addQueryItem("query", title);
+        qDebug() << title;
+    } else {
+        query.addQueryItem("query", title.left(title.indexOf(' ', 25)));
+        qDebug() << title.left(title.indexOf(' ', 25));
+    }
     query.addQueryItem("limit", "9999");
     query.addQueryItem("offset", "0");
     query.addQueryItem("types", "ALBUMS");
@@ -48,7 +55,7 @@ void TidalCore::Tidal::searchByUPC(std::string upc, std::string title)
 void TidalCore::Tidal::queryAlbum()
 {
     if (unchecked_albums.size() == 0) {
-        AlbumCore::Album::getInstance().setTidalFinished();
+        emit searchFinished(0x02);
         return;
     }
     for (auto a : unchecked_albums) {
@@ -95,7 +102,7 @@ void TidalCore::Tidal::clear()
 void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
 {
     if (reply->error() != QNetworkReply::NoError) {
-        AlbumCore::Album::getInstance().setTidalFinished();
+        emit searchFinished(0x02);
         clear();
         qDebug() << "Tidal search error: " << reply->error();
         reply->deleteLater();
@@ -103,14 +110,14 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
     }
     if (is_search_upc) {
         if (is_search_upc_step2) {
-            std::vector<Track> tracks;
+            std::vector<AlbumCore::Track> tracks;
             neb::CJsonObject json(reply->readAll().toStdString());
             uint i = 0;
             std::string album_title, cover;
             json["rows"][0]["modules"][0]["album"].Get("title", album_title);
             json["rows"][0]["modules"][0]["album"].Get("cover", cover);
             do {
-                TidalCore::Track track;
+                AlbumCore::Track track;
                 track.tid = json["rows"][1]["modules"][0]["pagedList"]["items"][i]["item"]["id"].ToString();
                 json["rows"][1]["modules"][0]["pagedList"]["items"][i]["item"].Get("title", track.title);
                 json["rows"][1]["modules"][0]["pagedList"]["items"][i]["item"].Get("duration", track.duration);
@@ -139,7 +146,7 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
                 }
             }
             if (!is_search_upc_step2) {
-                std::vector<TidalCore::Track> empty;
+                std::vector<AlbumCore::Track> empty;
                 emit searchByUPCFinished(empty, "", "");
             }
         }
@@ -207,7 +214,7 @@ void TidalCore::Tidal::httpFinished(QNetworkReply *reply)
             }
             finished_count++;
             if (finished_count >= unchecked_albums.size()) {
-                AlbumCore::Album::getInstance().setTidalFinished();
+                emit searchFinished(0x02);
             }
         } else {
             std::cout << "missed!" << std::endl;

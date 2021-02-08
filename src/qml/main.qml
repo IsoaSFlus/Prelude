@@ -7,23 +7,58 @@ import QtGraphicalEffects 1.12
 Item {
     id: root
 
-    StackView {
-         id: stack
-         initialItem: searchPageComp
-         anchors.fill: parent
-     }
+    RowLayout {
+        id: rowlayout
+        anchors.fill: parent
 
-    Component {
-        id: searchPageComp
-        SearchPage {
-            id: searchPage
+        PTabBar {
+            id: ptbar
+            Layout.fillHeight: true
+            Layout.preferredWidth: 50
+//            Layout.Center:
+        }
+
+        SwipeView {
+            id: swipeview
+            currentIndex: ptbar.page_index
+            orientation: Qt.Vertical
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Item {
+                id: page1
+
+                StackView {
+                    id: stack
+                    initialItem: searchPageComp
+                    anchors.fill: parent
+                }
+
+                Component {
+                    id: searchPageComp
+                    SearchPage {
+                        id: searchPage
+                    }
+                }
+
+                Component {
+                    id: detailPageComp
+                    DetailPage {
+                        id: detailPage
+                    }
+                }
+            }
+
+            Item {
+                id: page2
+
+                Text {
+                    id: tmptext
+                    text: qsTr("PlayerPage")
+                }
+            }
         }
     }
 
-    Component {
-        id: detailPageComp
-        DetailPage {
-            id: detailPage
-        }
-    }
+
 }

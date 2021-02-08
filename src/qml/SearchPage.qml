@@ -43,7 +43,7 @@ Rectangle {
             bottom: parent.bottom
         }
         cellWidth: 340
-        cellHeight: 380
+        cellHeight: 410
 
         function unsetBusy() {
             blur.opacity = 0;

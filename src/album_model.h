@@ -16,14 +16,16 @@ class Album
     Q_PROPERTY(QString upc READ upc)
     Q_PROPERTY(QDate date READ date)
     Q_PROPERTY(QString id READ id)
+    Q_PROPERTY(bool hires READ hires)
 
 public:
-    Album(QString id, QString title, QString cover, QDate date, QString upc) {
+    Album(QString id, QString title, QString cover, QDate date, QString upc, bool hires = false) {
         m_date = date;
         m_id = id;
         m_cover = cover;
         m_title = title;
         m_upc = upc;
+        m_hires = hires;
     }
     Album() = default;
     Album(const Album& other)=default;
@@ -44,6 +46,9 @@ public:
     const QString& upc() const {
         return m_upc;
     }
+    const bool& hires() const {
+        return m_hires;
+    }
 
 
 private:
@@ -52,6 +57,7 @@ private:
     QString m_cover;
     QString m_id;
     QString m_upc;
+    bool m_hires = false;
 };
 
 class Track {
@@ -114,7 +120,7 @@ private:
 
 private slots:
     void inputAlbumResults();
-    void handleTrackResults(std::vector<TidalCore::Track> t, QString album_title, QString cover_large);
+    void handleTrackResults(std::vector<AlbumCore::Track> t, QString album_title, QString cover_large);
 };
 
 #endif // ALBUM_MODEL_H

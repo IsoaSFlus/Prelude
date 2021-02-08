@@ -6,9 +6,11 @@ set(qlp_file_SRCS
     search_engine.cpp
     tidal/tidal_core.cpp
     spotify/spotify_core.cpp
+    qobuz/qobuz_core.cpp
     json/CJsonObject.cpp
     json/cJSON.c
     mpd/mpd_client.cpp
+    addtracktompd.cpp
 )
 
 qt5_add_resources(qlp_file_SRCS resource.qrc)

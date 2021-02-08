@@ -1,4 +1,5 @@
 #include "album_model.h"
+#include "mpd/mpd_client.h"
 
 
 AlbumModel::AlbumModel(QObject *parent) : QObject(parent)
@@ -7,8 +8,8 @@ AlbumModel::AlbumModel(QObject *parent) : QObject(parent)
     m_track_model = new QStandardItemModel(this);
     se = new SearchEngineCore::SearchEngine(this);
 
-    connect(&AlbumCore::Album::getInstance(), &AlbumCore::Album::searchFinished, this, &AlbumModel::inputAlbumResults);
-    connect(se, &SearchEngineCore::SearchEngine::findInTidalReady, this, &AlbumModel::handleTrackResults);
+    connect(se, &SearchEngineCore::SearchEngine::searchFinished, this, &AlbumModel::inputAlbumResults);
+    connect(se, &SearchEngineCore::SearchEngine::findInQobuzReady, this, &AlbumModel::handleTrackResults);
 }
 
 QStandardItemModel *AlbumModel::model() const
@@ -29,10 +30,7 @@ void AlbumModel::search(QString keywords)
 void AlbumModel::getTracks(QString upc, QString title)
 {
     qDebug() << "getting!" << upc << title;
-    if (title.size() > 20) {
-        title.resize(20);
-    }
-    se->findInTidal(upc.toStdString(), title.toStdString());
+    se->findInQobuz(upc, title);
 }
 
 void AlbumModel::addTracksToMPD(int index)
@@ -41,19 +39,19 @@ void AlbumModel::addTracksToMPD(int index)
     if (index == -1) {
         bool flag = true;
         int i = 0;
-        QStringList cmd;
-        cmd << "add";
+        QStringList tracks;
         while (flag) {
             item = m_track_model->item(i, 0);
             if (item != nullptr) {
                 Track t = item->data(Qt::DisplayRole).value<Track>();
-                cmd.append(QString("tidal://track/") + t.id());
+                tracks.append(QString("qobuz://track/") + t.id());
                 i++;
             } else {
                 flag = false;
             }
         }
-        QProcess::execute("mpc", cmd);
+//        qDebug() << tracks;
+        MPDClient::getInstance().addTracks(tracks);
     } else {
 
     }
@@ -66,7 +64,7 @@ void AlbumModel::inputAlbumResults()
     m_model->insertColumn(1);
     for (const auto& album : AlbumCore::Album::getInstance().getAlbums()) {
         const int new_row= m_model->rowCount();
-        const Album a(album.second.aid, album.second.title, album.second.cover, album.second.date, album.second.upc);
+        const Album a(album.second.aid, album.second.title, album.second.cover, album.second.date, album.second.upc, album.second.hires);
         m_model->insertRow(new_row);
         m_model->setData(m_model->index(new_row,0),QVariant::fromValue(a));
         m_model->setData(m_model->index(new_row,1),QVariant::fromValue(album.second.date));
@@ -76,7 +74,7 @@ void AlbumModel::inputAlbumResults()
     emit dataFetched();
 }
 
-void AlbumModel::handleTrackResults(std::vector<TidalCore::Track> t, QString album_title, QString cover_large)
+void AlbumModel::handleTrackResults(std::vector<AlbumCore::Track> t, QString album_title, QString cover_large)
 {
     m_track_model->clear();
     m_track_model->insertColumn(0);

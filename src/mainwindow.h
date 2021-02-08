@@ -13,7 +13,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QString host, QString ip, QWidget *parent = nullptr);
     ~MainWindow();
 
     virtual QSize sizeHint() const { return QSize(1920, 800); }

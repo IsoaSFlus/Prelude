@@ -4,9 +4,9 @@
 #include "search_engine.h"
 #include "mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(QString host, QString ip, QWidget *parent) : QMainWindow(parent)
 {
-    this->resize(QSize(1360, 800));
+    this->resize(QSize(1420, 800));
     album_model = new AlbumModel(this);
 
     root_qml = new QQuickWidget(this);
@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     setCentralWidget(root_qml);
 
-    mpd_client = new MPDClient(this);
+    MPDClient::getInstance().config(host, ip.toUInt());
 }
 
 MainWindow::~MainWindow()
