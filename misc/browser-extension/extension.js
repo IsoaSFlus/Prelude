@@ -1,6 +1,6 @@
 function checkUrl(u)
 {
-    if (u.includes('play.qobuz.com/album/')) {
+    if (u.includes('.qobuz.com/album/')) {
         return u.match(/.+\/([a-zA-Z0-9]+)/)[1];
     } else {
         return "";
