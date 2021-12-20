@@ -24,12 +24,21 @@ pub struct Tidal {
 }
 
 impl Tidal {
-    pub async fn new(email: &str, pwd: &str, app_id: &str, app_secret: &str, mpd: Arc<MPD>) -> Self {
+    pub async fn new(access_token: &str, country_code: &str, app_id: &str, app_secret: &str, mpd: Arc<MPD>) -> Self {
+        let key = if access_token.is_empty() {
+            Arc::new(RwLock::new(None))
+        } else {
+            Arc::new(RwLock::new(Some(TidalKey {
+                device_code: "".into(),
+                country_code: country_code.into(),
+                access_token: access_token.into(),
+            })))
+        };
         Self {
             base_api_url: "https://api.tidal.com/v1".into(),
             app_id: app_id.into(),
             app_secret: app_secret.into(),
-            key: Arc::new(RwLock::new(None)),
+            key,
             ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0".into(),
             mpd,
             auth_url: "https://auth.tidal.com/v1/oauth2".into(),
@@ -37,9 +46,21 @@ impl Tidal {
     }
 
     pub async fn auth(&self) -> Result<()> {
-        let client = reqwest::Client::builder().user_agent(&self.ua).connect_timeout(tokio::time::Duration::from_secs(10)).build()?;
+        if self.key.read().await.is_some() {
+            return Ok(());
+        }
+        let client = reqwest::Client::builder()
+            .user_agent(&self.ua)
+            .connect_timeout(tokio::time::Duration::from_secs(10))
+            .build()?;
         let payload = [("client_id", self.app_id.as_str()), ("scope", "r_usr+w_usr+w_sub")];
-        let resp = client.post(format!("{}/device_authorization", &self.auth_url)).form(&payload).send().await?.json::<serde_json::Value>().await?;
+        let resp = client
+            .post(format!("{}/device_authorization", &self.auth_url))
+            .form(&payload)
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
         println!("{:?}", &resp);
         let interval = resp.pointer("/interval").ok_or(anyhow!("err 1"))?.as_u64().unwrap();
         let device_code: String = resp.pointer("/deviceCode").ok_or(anyhow!("err 2"))?.as_str().unwrap().into();
@@ -87,7 +108,10 @@ impl Tidal {
     }
 
     pub async fn add_album(&self, album_id: &str) -> Result<()> {
-        let client = reqwest::Client::builder().user_agent(&self.ua).connect_timeout(tokio::time::Duration::from_secs(10)).build()?;
+        let client = reqwest::Client::builder()
+            .user_agent(&self.ua)
+            .connect_timeout(tokio::time::Duration::from_secs(10))
+            .build()?;
         let j = client
             .get(format!("{}/albums/{}/items", self.base_api_url, album_id))
             .header(
@@ -97,10 +121,13 @@ impl Tidal {
                     self.key.read().await.as_ref().unwrap().access_token.as_str()
                 ),
             )
-            .query(&[(
-                "countryCode",
-                self.key.read().await.as_ref().unwrap().country_code.as_str(),
-            )])
+            .query(&[
+                (
+                    "countryCode",
+                    self.key.read().await.as_ref().unwrap().country_code.as_str(),
+                ),
+                ("limit", "100"),
+            ])
             .send()
             .await?
             .json::<serde_json::Value>()
@@ -127,7 +154,10 @@ impl Tidal {
     }
 
     pub async fn get_tacks_url(&self, track_id: &str) -> Result<String> {
-        let client = reqwest::Client::builder().user_agent(&self.ua).connect_timeout(tokio::time::Duration::from_secs(10)).build()?;
+        let client = reqwest::Client::builder()
+            .user_agent(&self.ua)
+            .connect_timeout(tokio::time::Duration::from_secs(10))
+            .build()?;
         let j = client
             .get(format!(
                 "{}/tracks/{}/playbackinfopostpaywall",
@@ -156,7 +186,13 @@ impl Tidal {
         println!("{}", j.to_string());
         let mf = j.pointer("/manifest").ok_or(anyhow!("err 2"))?.as_str().unwrap();
         let mf = base64::decode(mf)?;
-        let u = if j.pointer("/manifestMimeType").ok_or(anyhow!("err 3"))?.as_str().unwrap().eq("application/vnd.tidal.bts") {
+        let u = if j
+            .pointer("/manifestMimeType")
+            .ok_or(anyhow!("err 3"))?
+            .as_str()
+            .unwrap()
+            .eq("application/vnd.tidal.bts")
+        {
             let j: serde_json::Value = serde_json::from_str(std::str::from_utf8(&mf)?)?;
             j.pointer("/urls/0").ok_or(anyhow!("err 1"))?.as_str().unwrap().into()
         } else {

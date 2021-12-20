@@ -1,7 +1,11 @@
 function checkUrl(u)
 {
-    if (u.includes('.qobuz.com/album/')) {
-        return u.match(/.+\/([a-zA-Z0-9]+)/)[1];
+    if (u.includes('qobuz.com/album/')) {
+        return 'http://127.0.0.1:3333/add_qobuz/' + u.match(/.+\/([a-zA-Z0-9]+)/)[1];
+    } else if (u.includes('tidal.com/album/')) {
+        return 'http://127.0.0.1:3333/add_tidal/' + u.match(/.+\/([a-zA-Z0-9]+)/)[1];
+    } else if (u.includes('tidal.com/browse/album/')) {
+        return 'http://127.0.0.1:3333/add_tidal/' + u.match(/.+\/([a-zA-Z0-9]+)/)[1];
     } else {
         return "";
     }
@@ -28,7 +32,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             url = checkUrl(info.pageUrl);
         }
         if (url !== "") {
-            chrome.tabs.create({url: 'prelude://' + url , active: true});
+            chrome.tabs.create({url: url , active: true});
         }
         break;
     }

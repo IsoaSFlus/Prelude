@@ -26,8 +26,8 @@ pub struct QobuzConfig {
 }
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct TidalConfig {
-    pub email: String,
-    pub password: String,
+    pub token: String,
+    pub country: String,
     pub app_id: String,
     pub app_secret: String,
 }
@@ -104,8 +104,8 @@ fn main() {
             )
             .await,
             tidal: Tidal::new(
-                &c.tidal.email,
-                &c.tidal.password,
+                &c.tidal.token,
+                &c.tidal.country,
                 &c.tidal.app_id,
                 &c.tidal.app_secret,
                 mpd.clone(),
@@ -145,6 +145,21 @@ async fn get_track(
         .connect_timeout(tokio::time::Duration::from_secs(10))
         .build()
         .unwrap();
+    let client = Arc::new(client);
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    if !u.contains(r#"$Number$.mp4"#) {
+        let c1 = client.clone();
+        let u1 = u.clone();
+        tokio::spawn(async move {
+            if let Ok(mut resp) = c1.get(&u1).send().await {
+                while let Ok(Some(chunk)) = resp.chunk().await {
+                    if tx.send(chunk).is_err() {
+                        break;
+                    }
+                }
+            }
+        });
+    }
     let stream = async_stream::stream! {
         if u.contains(r#"$Number$.mp4"#) {
             let mut i = 0usize;
@@ -158,10 +173,8 @@ async fn get_track(
                 }
             }
         } else {
-            if let Ok(mut resp) = client.get(&u).send().await {
-                while let Ok(Some(chunk)) = resp.chunk().await {
-                    yield anyhow::Ok(chunk);
-                }
+            while let Some(chunk) = rx.recv().await {
+                yield anyhow::Ok(chunk);
             }
         }
     };
