@@ -3,7 +3,7 @@ import { ref } from "vue";
 
 const props = defineProps({
   // avatorUrl: String,
-  url: String,
+  id: String,
   cover_url: String,
   // upnick: String,
   title: String,
@@ -13,9 +13,11 @@ const props = defineProps({
 <template>
   <el-row type="flex" justify="center">
     <el-card class="vc-card" :body-style="{ padding: '0px' }">
-      <a :href="url">
+      <router-link
+        :to="{ name: 'sp_detail', params: { id: id, cover_url: cover_url, title: title }}"
+      >
         <img :src="cover_url" class="image" />
-      </a>
+      </router-link>
       <div class="card-video-title">
         <span>{{title}}</span>
       </div>

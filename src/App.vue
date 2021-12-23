@@ -1,7 +1,6 @@
 <script setup>
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
-import SearchView from "./views/SearchView.vue";
 import { invoke } from "@tauri-apps/api";
 import { ref, onMounted } from "vue";
 
@@ -17,7 +16,13 @@ onMounted(() => {
 <template>
   <div>
     <div id="main">
-      <router-view></router-view>
+      <router-view v-slot="{ Component }">
+        <transition>
+          <keep-alive include="SearchView">
+            <component :is="Component" />
+          </keep-alive>
+        </transition>
+      </router-view>
     </div>
   </div>
 </template>
