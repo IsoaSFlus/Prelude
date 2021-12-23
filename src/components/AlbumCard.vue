@@ -35,11 +35,13 @@ const props = defineProps({
   margin: 1rem;
 }
 .image {
-  width: 20rem;
+  width: 16rem;
+  height: 16rem;
+  object-fit: cover;
   display: block;
 }
 .card-video-title {
-  max-width: 19.6rem;
+  max-width: 15.5rem;
   min-height: 3rem;
   display: flex;
   align-items: center;

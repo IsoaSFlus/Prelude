@@ -2,39 +2,33 @@
 import { Search } from "@element-plus/icons-vue";
 import AlbumCard from "../components/AlbumCard.vue";
 import { ref, onMounted } from "vue";
+import { invoke } from "@tauri-apps/api";
 const input = ref("");
 const albums = ref(Array());
+
 let search = () => {
-  console.log(input);
+  albums.value = [];
+  invoke("search_spotify", {
+    keywords: input.value,
+  }).then(() => {
+    load_new_albums();
+  });
 };
 
 let load_new_albums = () => {
-  if (albums.value.length < 100000) {
-    albums.value.push({
-      url: "https://www.bilibili.com/video/BV1zP4y1H7hZ",
-      cover_url:
-        "https://i2.hdslb.com/bfs/archive/6549df6d11cde68937433884ba1fd9437ff38fee.jpg",
-      title: "aaaaa",
-    });
-    // console.log(albums.value);
-  }
+  invoke("get_spotify_search_result").then((res) => {
+    for (var i in res) {
+      // console.log(a);
+      albums.value.push({
+        url: res[i].url,
+        cover_url: res[i].cover_url,
+        title: res[i].title,
+      });
+    }
+  });
 };
-onMounted(() => {
-  albums.value = [
-    {
-      url: "https://www.bilibili.com/video/BV1zP4y1H7hZ",
-      cover_url:
-        "https://i2.hdslb.com/bfs/archive/6549df6d11cde68937433884ba1fd9437ff38fee.jpg",
-      title: "aaaaa",
-    },
-    {
-      url: "https://www.bilibili.com/video/BV1zP4y1H7hZ",
-      cover_url:
-        "https://i2.hdslb.com/bfs/archive/6549df6d11cde68937433884ba1fd9437ff38fee.jpg",
-      title: "aaaaa",
-    },
-  ];
-});
+
+onMounted(() => {});
 </script>
 
 <template>
