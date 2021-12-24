@@ -1,4 +1,4 @@
-use crate::Album;
+use crate::server::Album;
 use anyhow::Result;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt},

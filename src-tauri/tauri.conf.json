@@ -1,7 +1,7 @@
 {
   "package": {
     "productName": "prelude",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "build": {
     "distDir": "../dist",
@@ -54,8 +54,8 @@
     "windows": [
       {
         "title": "prelude",
-        "width": 800,
-        "height": 600,
+        "width": 1150,
+        "height": 700,
         "resizable": true,
         "fullscreen": false
       }

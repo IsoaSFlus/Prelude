@@ -1,47 +1,58 @@
-use crate::{mpd::MPD, Album, Track};
+use crate::server::{Album, Track};
 use anyhow::Result;
-use std::sync::Arc;
+use tauri::async_runtime::RwLock;
 
 pub struct Qobuz {
     base_api_url: String,
     app_id: String,
     app_secret: String,
-    user_auth_token: String,
+    user_auth_token: RwLock<String>,
     pub ua: String,
-    pub mpd: Arc<MPD>,
 }
 
 impl Qobuz {
-    pub async fn new(email: &str, pwd: &str, app_id: &str, app_secret: &str, mpd: Arc<MPD>) -> Self {
+    pub fn new(c: &crate::config::Config) -> Self {
         let base_api_url = "https://www.qobuz.com/api.json/0.2/".into();
-        let mut r = Self {
+        Self {
             base_api_url,
-            ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0".into(),
-            app_id: app_id.into(),
-            app_secret: app_secret.into(),
-            user_auth_token: "".into(),
-            mpd,
-        };
-        r.user_auth_token = r.auth(email, pwd).await.unwrap();
-        r
+            ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0"
+                .into(),
+            app_id: c.qobuz.app_id.clone(),
+            app_secret: c.qobuz.app_secret.clone(),
+            user_auth_token: RwLock::new("".into()),
+        }
     }
 
-    pub async fn auth(&self, email: &str, pwd: &str) -> Result<String> {
-        let client = reqwest::Client::builder().user_agent(&self.ua).connect_timeout(tokio::time::Duration::from_secs(10)).build()?;
+    pub async fn auth(&self, email: &str, pwd: &str) -> Result<()> {
+        let client = reqwest::Client::builder()
+            .user_agent(&self.ua)
+            .connect_timeout(tokio::time::Duration::from_secs(10))
+            .build()?;
         let j = client
             .get(format!("{}user/login", self.base_api_url))
             .header("X-App-Id", self.app_id.as_str())
-            .query(&[("email", email), ("password", pwd), ("app_id", self.app_id.as_str())])
+            .query(&[
+                ("email", email),
+                ("password", pwd),
+                ("app_id", self.app_id.as_str()),
+            ])
             .send()
             .await?
             .json::<serde_json::Value>()
             .await?;
         println!("{:?}", &j.to_string());
-        Ok(j.pointer("/user_auth_token").unwrap().as_str().unwrap().into())
+        self.user_auth_token
+            .write()
+            .await
+            .push_str(j.pointer("/user_auth_token").unwrap().as_str().unwrap());
+        Ok(())
     }
 
     pub async fn get_tacks_file(&self, track_id: &str) -> Result<String> {
-        let client = reqwest::Client::builder().user_agent(&self.ua).connect_timeout(tokio::time::Duration::from_secs(10)).build()?;
+        let client = reqwest::Client::builder()
+            .user_agent(&self.ua)
+            .connect_timeout(tokio::time::Duration::from_secs(10))
+            .build()?;
 
         let ts = chrono::Utc::now().timestamp().to_string();
         let sig = format!(
@@ -60,7 +71,10 @@ impl Qobuz {
         let j = client
             .get(format!("{}track/getFileUrl", self.base_api_url))
             .header("X-App-Id", self.app_id.as_str())
-            .header("X-User-Auth-Token", self.user_auth_token.as_str())
+            .header(
+                "X-User-Auth-Token",
+                self.user_auth_token.read().await.as_str(),
+            )
             .query(q)
             .send()
             .await?
@@ -71,11 +85,17 @@ impl Qobuz {
     }
 
     pub async fn add_album(&self, album_id: &str) -> Result<()> {
-        let client = reqwest::Client::builder().user_agent(&self.ua).connect_timeout(tokio::time::Duration::from_secs(10)).build()?;
+        let client = reqwest::Client::builder()
+            .user_agent(&self.ua)
+            .connect_timeout(tokio::time::Duration::from_secs(10))
+            .build()?;
         let j = client
             .get(format!("{}album/get", self.base_api_url))
             .header("X-App-Id", self.app_id.as_str())
-            .header("X-User-Auth-Token", self.user_auth_token.as_str())
+            .header(
+                "X-User-Auth-Token",
+                self.user_auth_token.read().await.as_str(),
+            )
             .query(&[("album_id", album_id)])
             .send()
             .await?
@@ -95,7 +115,7 @@ impl Qobuz {
                 None => title,
             };
             let track = Track {
-                id: t.pointer("/id").unwrap().as_i64().unwrap(),
+                id: t.pointer("/id").unwrap().as_i64().unwrap().to_string(),
                 performers: t.pointer("/performers").unwrap().as_str().unwrap().into(),
                 title,
             };
@@ -107,7 +127,7 @@ impl Qobuz {
             tracks,
         };
         println!("{:?}", album);
-        self.mpd.add_album_to_mpd(&album, "qobuz").await?;
+        // self.mpd.add_album_to_mpd(&album, "qobuz").await?;
         Ok(())
     }
 }

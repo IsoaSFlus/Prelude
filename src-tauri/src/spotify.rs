@@ -1,6 +1,12 @@
-use std::sync::Arc;
+use std::{any, io::Read, slice::SliceIndex, sync::Arc};
 
+use bytes::Bytes;
+use futures::Stream;
 use indexmap::IndexMap;
+use librespot::{
+    audio::{AudioDecrypt, AudioFile},
+    core::{session::Session, spotify_id::SpotifyId},
+};
 use tauri::async_runtime::RwLock;
 
 #[derive(serde::Serialize)]
@@ -17,19 +23,35 @@ pub struct Album {
 }
 
 pub struct Spotify {
+    email: String,
+    password: String,
     search_result: RwLock<IndexMap<String, Album>>,
     token: RwLock<String>,
+    session: RwLock<Option<Session>>,
 }
 
 impl Spotify {
-    pub fn new() -> Self {
+    pub fn new(c: &crate::config::Config) -> Self {
         Self {
             search_result: RwLock::new(IndexMap::new()),
             token: RwLock::new("".into()),
+            email: c.spotify.email.clone(),
+            password: c.spotify.password.clone(),
+            session: RwLock::new(None),
         }
     }
 
-    pub async fn init(self: &Arc<Self>) -> anyhow::Result<()> {
+    pub async fn init(&self) -> anyhow::Result<()> {
+        let credentials =
+            librespot::discovery::Credentials::with_password(&self.email, &self.password);
+        let session = librespot::core::session::Session::connect(
+            librespot::core::config::SessionConfig::default(),
+            credentials,
+            None,
+        )
+        .await?;
+        *self.session.write().await = Some(session);
+
         let client = reqwest::Client::builder()
             .connect_timeout(std::time::Duration::from_secs(10))
             .build()?;
@@ -169,5 +191,73 @@ impl Spotify {
             });
         }
         Ok(ret)
+    }
+    pub async fn get_track_file(
+        &self,
+        track_id: &str,
+    ) -> anyhow::Result<tokio::sync::mpsc::UnboundedReceiver<Bytes>> {
+        use librespot::metadata::{FileFormat, Metadata, Track};
+        let session = self.session.read().await;
+        let session = session.as_ref().unwrap();
+        let id = match SpotifyId::from_base62(track_id) {
+            Ok(id) => id,
+            Err(_) => return Err(anyhow::anyhow!("gtf err 1")),
+        };
+        let track = match Track::get(session, id).await {
+            Ok(it) => it,
+            Err(_) => return Err(anyhow::anyhow!("gtf err 2")),
+        };
+        println!("{:?}", &track.files);
+        // let mut file_id = None;
+        let file_id = if let Some(f) = track.files.get(&FileFormat::OGG_VORBIS_160) {
+            f
+        } else {
+            return Err(anyhow::anyhow!("gtf err 3"));
+        };
+
+        let key = match session.audio_key().request(track.id, *file_id).await {
+            Ok(it) => it,
+            Err(_) => return Err(anyhow::anyhow!("gtf err 4")),
+        };
+        let encrypted = match AudioFile::open(session, *file_id, 1024 * 1024, true).await {
+            Ok(it) => it,
+            Err(_) => return Err(anyhow::anyhow!("gtf err 5")),
+        };
+        let size = encrypted.get_stream_loader_controller().len();
+        let mut decrypted = AudioDecrypt::new(key, encrypted);
+        // skip
+        let mut skip: [u8; 0xa7] = [0; 0xa7];
+        let mut decrypted =
+            tokio::task::spawn_blocking(move || match decrypted.read_exact(&mut skip) {
+                Ok(_) => Ok(decrypted),
+                Err(e) => Err(e),
+            })
+            .await??;
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+        tokio::spawn(async move {
+            loop {
+                // Blocking reader
+                let (d, read, buf) = tokio::task::spawn_blocking(move || {
+                    let mut buf = vec![0; 1024 * 64];
+                    match decrypted.read(&mut buf) {
+                        Ok(r) => {
+                            buf.truncate(r);
+                            Ok((decrypted, r, buf))
+                        }
+                        Err(e) => Err(e),
+                    }
+                })
+                .await??;
+                decrypted = d;
+                if read == 0 {
+                    break;
+                }
+                if tx.send(Bytes::from(buf)).is_err() {
+                    break;
+                }
+            }
+            anyhow::Ok(())
+        });
+        Ok(rx)
     }
 }

@@ -11,6 +11,20 @@ const route = useRoute();
 let go_back = () => {
   router.back();
 };
+
+let add_to_mpd = () => {
+  let a = [];
+  for (var i in tracks.value) {
+    a.push({
+      id: tracks.value[i].id,
+      title: tracks.value[i].title,
+      performers: "aaaa",
+    });
+  }
+  invoke("add_spotify_tracks_to_mpd", {
+    album: { img: "aaa", title: route.params.title, tracks: a },
+  }).then(() => {});
+};
 // const props = defineProps({});
 onMounted(() => {
   invoke("get_spotify_album_tracks", {
@@ -20,6 +34,7 @@ onMounted(() => {
       for (var i in res) {
         // console.log(a);
         tracks.value.push({
+          id: res[i].id,
           duration: res[i].duration,
           title: res[i].title,
         });
@@ -39,6 +54,7 @@ onMounted(() => {
         <img :src="route.params.cover_url" class="image" />
       </div>
       <span>{{route.params.title}}</span>
+      <el-button class="button" type="primary" @click="add_to_mpd" size="mini" :icon="Back" circle></el-button>
     </el-col>
     <el-col :span="12">
       <el-table :data="tracks" style="width: 100%">
@@ -67,7 +83,7 @@ onMounted(() => {
   width: 25rem;
   height: 25rem;
   object-fit: cover;
-    /* display: block; */
+  /* display: block; */
 }
 .card-video-title {
   max-width: 15.5rem;
