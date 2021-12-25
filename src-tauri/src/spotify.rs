@@ -13,6 +13,7 @@ use tauri::async_runtime::RwLock;
 pub struct Track {
     id: String,
     duration: i64,
+    performers: String,
     title: String,
 }
 #[derive(serde::Serialize)]
@@ -169,6 +170,15 @@ impl Spotify {
             .as_array()
             .unwrap();
         for item in items {
+            if item
+                .pointer("/is_playable")
+                .ok_or(anyhow::anyhow!("gat err 5"))?
+                .as_bool()
+                .unwrap()
+                == false
+            {
+                continue;
+            };
             let id = item
                 .pointer("/id")
                 .ok_or(anyhow::anyhow!("gat err 2"))?
@@ -184,10 +194,29 @@ impl Spotify {
                 .ok_or(anyhow::anyhow!("gat err 4"))?
                 .as_str()
                 .unwrap();
+            let artists = item
+                .pointer("/artists")
+                .ok_or(anyhow::anyhow!("gat err 6"))?
+                .as_array()
+                .unwrap();
+            let mut performers: String = "".into();
+            for artist in artists {
+                if !performers.is_empty() {
+                    performers.push_str(", ");
+                }
+                performers.push_str(
+                    artist
+                        .pointer("/name")
+                        .ok_or(anyhow::anyhow!("gat err 7"))?
+                        .as_str()
+                        .unwrap(),
+                );
+            }
             ret.push(Track {
                 id: format!("{}", id),
                 duration: duration / 1000,
                 title: title.into(),
+                performers,
             });
         }
         Ok(ret)

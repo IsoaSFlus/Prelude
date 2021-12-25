@@ -18,14 +18,29 @@ let add_to_mpd = () => {
     a.push({
       id: tracks.value[i].id,
       title: tracks.value[i].title,
-      performers: "aaaa",
+      performers: tracks.value[i].performers,
     });
   }
   invoke("add_spotify_tracks_to_mpd", {
-    album: { img: "aaa", title: route.params.title, tracks: a },
+    album: {
+      img: route.params.cover_url,
+      title: route.params.title,
+      tracks: a,
+    },
   }).then(() => {});
 };
 // const props = defineProps({});
+let secToMMSS = (sec) => {
+  let m = Math.floor(sec / 60);
+  let s = sec % 60;
+  if (s < 10) {
+    s = "0" + s;
+  }
+  if (m < 10) {
+    m = "0" + m;
+  }
+  return m + ":" + s;
+};
 onMounted(() => {
   invoke("get_spotify_album_tracks", {
     id: route.params.id,
@@ -35,8 +50,9 @@ onMounted(() => {
         // console.log(a);
         tracks.value.push({
           id: res[i].id,
-          duration: res[i].duration,
+          duration: secToMMSS(res[i].duration),
           title: res[i].title,
+          performers: res[i].performers,
         });
       }
     })

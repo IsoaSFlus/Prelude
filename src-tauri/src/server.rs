@@ -1,5 +1,4 @@
-use crate::{mpd::MPD, qobuz::Qobuz, spotify, tidal::Tidal};
-use async_stream::AsyncStream;
+use crate::{mpd::MPD, qobuz::Qobuz, tidal::Tidal};
 use axum::{
     body::StreamBody,
     extract::{Extension, Path, Query},
@@ -8,7 +7,6 @@ use axum::{
     AddExtensionLayer, Router,
 };
 use bytes::Bytes;
-use futures::{Stream, TryFutureExt};
 use hyper::StatusCode;
 use std::{collections::HashMap, sync::Arc};
 
