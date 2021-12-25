@@ -34,7 +34,7 @@ async-stream = "0.3"
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1.14", features = ["full"] }
 reqwest = { version = "0.11", features = ["json", "stream"] }
-librespot = { git = "https://github.com/THMonster/librespot", branch = "tmp" }
+librespot = { git = "https://github.com/THMonster/librespot", branch = "tmp" , default-features = false }
 
 [features]
 default = [ "custom-protocol" ]
