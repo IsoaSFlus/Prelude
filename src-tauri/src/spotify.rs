@@ -1,12 +1,10 @@
-use std::{any, io::Read, slice::SliceIndex, sync::Arc};
-
 use bytes::Bytes;
-use futures::Stream;
 use indexmap::IndexMap;
 use librespot::{
     audio::{AudioDecrypt, AudioFile},
     core::{session::Session, spotify_id::SpotifyId},
 };
+use std::io::Read;
 use tauri::async_runtime::RwLock;
 
 #[derive(serde::Serialize)]
@@ -43,33 +41,24 @@ impl Spotify {
     }
 
     pub async fn init(&self) -> anyhow::Result<()> {
-        let credentials =
-            librespot::discovery::Credentials::with_password(&self.email, &self.password);
-        let session = librespot::core::session::Session::connect(
-            librespot::core::config::SessionConfig::default(),
-            credentials,
-            None,
-        )
-        .await?;
+        let credentials = librespot::discovery::Credentials::with_password(&self.email, &self.password);
+        let session = librespot::core::session::Session::connect(librespot::core::config::SessionConfig::default(), credentials, None).await?;
         *self.session.write().await = Some(session);
 
-        let client = reqwest::Client::builder()
-            .connect_timeout(std::time::Duration::from_secs(10))
-            .build()?;
+        let client = reqwest::Client::builder().connect_timeout(std::time::Duration::from_secs(10)).build()?;
         let payload = [("grant_type", "client_credentials")];
         let j = client
-      .post("https://accounts.spotify.com/api/token")
-      .header("authorization", r#"Basic Y2E1YTU4Zjk4ZTBkNGJjNmE2ZThhMmZkNWIzZTg5NWQ6YWJjZTQzZDllNmNkNDZhOTgyNDFlZTI1NDFhZWZjMWU="#)
-      .form(&payload)
-      .send()
-      .await?
-      .json::<serde_json::Value>()
-      .await?;
-        let t = j
-            .pointer("/access_token")
-            .ok_or(anyhow::anyhow!("spotify init err 1"))?
-            .as_str()
-            .unwrap();
+            .post("https://accounts.spotify.com/api/token")
+            .header(
+                "authorization",
+                r#"Basic Y2E1YTU4Zjk4ZTBkNGJjNmE2ZThhMmZkNWIzZTg5NWQ6YWJjZTQzZDllNmNkNDZhOTgyNDFlZTI1NDFhZWZjMWU="#,
+            )
+            .form(&payload)
+            .send()
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
+        let t = j.pointer("/access_token").ok_or(anyhow::anyhow!("spotify init err 1"))?.as_str().unwrap();
         let mut token = self.token.write().await;
         token.clear();
         token.push_str("Bearer ");
@@ -78,54 +67,94 @@ impl Spotify {
     }
 
     pub async fn search(&self, keywords: &str) -> anyhow::Result<()> {
-        let client = reqwest::Client::builder()
-            .connect_timeout(std::time::Duration::from_secs(10))
-            .build()?;
+        let (is_playlist, keywords) = if keywords.starts_with("pl::") {
+            (true, &keywords[4..])
+        } else {
+            (false, keywords)
+        };
+        let client = reqwest::Client::builder().connect_timeout(std::time::Duration::from_secs(10)).build()?;
         let j = client
             .get("https://api.spotify.com/v1/search")
             .header("authorization", self.token.read().await.as_str())
-            .query(&[
-                ("q", keywords),
-                ("type", "album"),
-                ("market", "JP"),
-                ("limit", "50"),
-            ])
+            .query(&[("q", keywords), ("type", "album,playlist"), ("market", "JP"), ("limit", "50")])
             .send()
             .await?
             .json::<serde_json::Value>()
             .await?;
-        // println!("{:?}", &j);
-        let items = j
-            .pointer("/albums/items")
-            .ok_or(anyhow::anyhow!("spotify search err 1"))?
-            .as_array()
-            .unwrap();
         let mut re = self.search_result.write().await;
         re.clear();
-        for item in items {
-            let id = item
-                .pointer("/id")
-                .ok_or(anyhow::anyhow!("spotify search err 2"))?
-                .as_str()
+        if !is_playlist {
+            let items = j
+                .pointer("/albums/items")
+                .ok_or(anyhow::anyhow!("spotify search err 1"))?
+                .as_array()
                 .unwrap();
-            let cover_url = item
-                .pointer("/images/0/url")
-                .ok_or(anyhow::anyhow!("spotify search err 3"))?
-                .as_str()
+            for item in items {
+                let id = item.pointer("/id").ok_or(anyhow::anyhow!("spotify search err 2"))?.as_str().unwrap();
+                let cover_url = item
+                    .pointer("/images/0/url")
+                    .ok_or(anyhow::anyhow!("spotify search err 3"))?
+                    .as_str()
+                    .unwrap();
+                let title = item.pointer("/name").ok_or(anyhow::anyhow!("spotify search err 4"))?.as_str().unwrap();
+                re.insert(
+                    id.into(),
+                    Album {
+                        id: format!("{}", id),
+                        cover_url: cover_url.into(),
+                        title: title.into(),
+                    },
+                );
+            }
+        } else {
+            let items = j
+                .pointer("/playlists/items")
+                .ok_or(anyhow::anyhow!("spotify search err 1"))?
+                .as_array()
                 .unwrap();
-            let title = item
-                .pointer("/name")
-                .ok_or(anyhow::anyhow!("spotify search err 4"))?
-                .as_str()
-                .unwrap();
-            re.insert(
-                id.into(),
-                Album {
-                    id: format!("{}", id),
-                    cover_url: cover_url.into(),
-                    title: title.into(),
-                },
-            );
+            for item in items {
+                let id = item.pointer("/id").ok_or(anyhow::anyhow!("spotify search err 2"))?.as_str().unwrap();
+                let cover_url = item
+                    .pointer("/images/0/url")
+                    .ok_or(anyhow::anyhow!("spotify search err 3"))?
+                    .as_str()
+                    .unwrap();
+                let title = item.pointer("/name").ok_or(anyhow::anyhow!("spotify search err 4"))?.as_str().unwrap();
+                re.insert(
+                    id.into(),
+                    Album {
+                        id: format!("{}", id),
+                        cover_url: cover_url.into(),
+                        title: title.into(),
+                    },
+                );
+            }
+            let j = client
+                .get(format!("https://api.spotify.com/v1/users/{}/playlists", &keywords))
+                .header("authorization", self.token.read().await.as_str())
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?;
+            // println!("{:?}", &j);
+            let items = j.pointer("/items").ok_or(anyhow::anyhow!("spotify search err 1"))?.as_array().unwrap();
+            for item in items {
+                let id = item.pointer("/id").ok_or(anyhow::anyhow!("spotify search err 2"))?.as_str().unwrap();
+                let cover_url = item
+                    .pointer("/images/0/url")
+                    .ok_or(anyhow::anyhow!("spotify search err 3"))?
+                    .as_str()
+                    .unwrap();
+                let title = item.pointer("/name").ok_or(anyhow::anyhow!("spotify search err 4"))?.as_str().unwrap();
+                re.insert(
+                    id.into(),
+                    Album {
+                        id: format!("{}", id),
+                        cover_url: cover_url.into(),
+                        title: title.into(),
+                    },
+                );
+            }
         }
         re.reverse();
         Ok(())
@@ -152,79 +181,100 @@ impl Spotify {
 
     pub async fn get_album_tracks(&self, id: &str) -> anyhow::Result<Vec<Track>> {
         let mut ret = Vec::new();
-        let client = reqwest::Client::builder()
-            .connect_timeout(std::time::Duration::from_secs(10))
-            .build()?;
-        let j = client
-            .get(format!("https://api.spotify.com/v1/albums/{}/tracks", &id))
-            .header("authorization", self.token.read().await.as_str())
-            .query(&[("market", "JP"), ("limit", "50")])
-            .send()
-            .await?
-            .json::<serde_json::Value>()
-            .await?;
-        println!("{:?}", &j.to_string());
-        let items = j
-            .pointer("/items")
-            .ok_or(anyhow::anyhow!("gat err 1"))?
-            .as_array()
-            .unwrap();
-        for item in items {
-            if item
-                .pointer("/is_playable")
-                .ok_or(anyhow::anyhow!("gat err 5"))?
-                .as_bool()
-                .unwrap()
-                == false
-            {
-                continue;
-            };
-            let id = item
-                .pointer("/id")
-                .ok_or(anyhow::anyhow!("gat err 2"))?
-                .as_str()
-                .unwrap();
-            let duration = item
-                .pointer("/duration_ms")
-                .ok_or(anyhow::anyhow!("gat err 3"))?
-                .as_i64()
-                .unwrap();
-            let title = item
-                .pointer("/name")
-                .ok_or(anyhow::anyhow!("gat err 4"))?
-                .as_str()
-                .unwrap();
-            let artists = item
-                .pointer("/artists")
-                .ok_or(anyhow::anyhow!("gat err 6"))?
-                .as_array()
-                .unwrap();
-            let mut performers: String = "".into();
-            for artist in artists {
-                if !performers.is_empty() {
-                    performers.push_str(", ");
+        let mut offset = 0i64;
+        let client = reqwest::Client::builder().connect_timeout(std::time::Duration::from_secs(10)).build()?;
+        loop {
+            let j = client
+                .get(format!("https://api.spotify.com/v1/albums/{}/tracks", &id))
+                .header("authorization", self.token.read().await.as_str())
+                .query(&[("market", "JP"), ("limit", "50"), ("offset", offset.to_string().as_str())])
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?;
+            // println!("{:?}", &j.to_string());
+            let total = j.pointer("/total").ok_or(anyhow::anyhow!("gat err 8"))?.as_i64().unwrap();
+            let items = j.pointer("/items").ok_or(anyhow::anyhow!("gat err 1"))?.as_array().unwrap();
+            for item in items {
+                if item.pointer("/is_playable").ok_or(anyhow::anyhow!("gat err 5"))?.as_bool().unwrap() == false {
+                    continue;
+                };
+                let id = item.pointer("/id").ok_or(anyhow::anyhow!("gat err 2"))?.as_str().unwrap();
+                let duration = item.pointer("/duration_ms").ok_or(anyhow::anyhow!("gat err 3"))?.as_i64().unwrap();
+                let title = item.pointer("/name").ok_or(anyhow::anyhow!("gat err 4"))?.as_str().unwrap();
+                let artists = item.pointer("/artists").ok_or(anyhow::anyhow!("gat err 6"))?.as_array().unwrap();
+                let mut performers: String = "".into();
+                for artist in artists {
+                    if !performers.is_empty() {
+                        performers.push_str(", ");
+                    }
+                    performers.push_str(artist.pointer("/name").ok_or(anyhow::anyhow!("gat err 7"))?.as_str().unwrap());
                 }
-                performers.push_str(
-                    artist
-                        .pointer("/name")
-                        .ok_or(anyhow::anyhow!("gat err 7"))?
-                        .as_str()
-                        .unwrap(),
-                );
+                ret.push(Track {
+                    id: format!("{}", id),
+                    duration: duration / 1000,
+                    title: title.into(),
+                    performers,
+                });
             }
-            ret.push(Track {
-                id: format!("{}", id),
-                duration: duration / 1000,
-                title: title.into(),
-                performers,
-            });
+            if total > offset + 50 {
+                offset += 50;
+            } else {
+                break;
+            }
         }
         Ok(ret)
     }
-    pub async fn get_track_file(
-        &self,
-        track_id: &str,
-    ) -> anyhow::Result<tokio::sync::mpsc::UnboundedReceiver<Bytes>> {
+
+    pub async fn get_playlist_tracks(&self, id: &str) -> anyhow::Result<Vec<Track>> {
+        let mut ret = Vec::new();
+        let mut offset = 0i64;
+        let client = reqwest::Client::builder().connect_timeout(std::time::Duration::from_secs(10)).build()?;
+        loop {
+            let j = client
+                .get(format!("https://api.spotify.com/v1/playlists/{}/tracks", &id))
+                .header("authorization", self.token.read().await.as_str())
+                .query(&[("market", "JP"), ("limit", "100"), ("offset", offset.to_string().as_str())])
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?;
+            let total = j.pointer("/total").ok_or(anyhow::anyhow!("gat err 8"))?.as_i64().unwrap();
+            // println!("{:?}", &j.to_string());
+            let items = j.pointer("/items").ok_or(anyhow::anyhow!("gat err 1"))?.as_array().unwrap();
+            for item in items {
+                println!("{:?}", &item.to_string());
+                if item.pointer("/track/is_playable").ok_or(anyhow::anyhow!("gat err 5"))?.as_bool().unwrap() == false {
+                    continue;
+                };
+                let id = item.pointer("/track/id").ok_or(anyhow::anyhow!("gat err 2"))?.as_str().unwrap();
+                let duration = item.pointer("/track/duration_ms").ok_or(anyhow::anyhow!("gat err 3"))?.as_i64().unwrap();
+                let title = item.pointer("/track/name").ok_or(anyhow::anyhow!("gat err 4"))?.as_str().unwrap();
+                let artists = item.pointer("/track/artists").ok_or(anyhow::anyhow!("gat err 6"))?.as_array().unwrap();
+                let mut performers: String = "".into();
+                for artist in artists {
+                    if !performers.is_empty() {
+                        performers.push_str(", ");
+                    }
+                    performers.push_str(artist.pointer("/name").ok_or(anyhow::anyhow!("gat err 7"))?.as_str().unwrap());
+                }
+                ret.push(Track {
+                    id: format!("{}", id),
+                    duration: duration / 1000,
+                    title: title.into(),
+                    performers,
+                });
+            }
+            if total > offset + 100 {
+                offset += 100;
+            } else {
+                break;
+            }
+        }
+        Ok(ret)
+    }
+
+    pub async fn get_track_file(&self, track_id: &str) -> anyhow::Result<tokio::sync::mpsc::UnboundedReceiver<Bytes>> {
         use librespot::metadata::{FileFormat, Metadata, Track};
         let session = self.session.read().await;
         let session = session.as_ref().unwrap();
@@ -252,16 +302,15 @@ impl Spotify {
             Ok(it) => it,
             Err(_) => return Err(anyhow::anyhow!("gtf err 5")),
         };
-        let size = encrypted.get_stream_loader_controller().len();
+        // let size = encrypted.get_stream_loader_controller().len();
         let mut decrypted = AudioDecrypt::new(key, encrypted);
         // skip
         let mut skip: [u8; 0xa7] = [0; 0xa7];
-        let mut decrypted =
-            tokio::task::spawn_blocking(move || match decrypted.read_exact(&mut skip) {
-                Ok(_) => Ok(decrypted),
-                Err(e) => Err(e),
-            })
-            .await??;
+        let mut decrypted = tokio::task::spawn_blocking(move || match decrypted.read_exact(&mut skip) {
+            Ok(_) => Ok(decrypted),
+            Err(e) => Err(e),
+        })
+        .await??;
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
         tokio::spawn(async move {
             loop {
