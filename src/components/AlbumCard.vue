@@ -13,11 +13,7 @@ const props = defineProps({
 <template>
   <el-row type="flex" justify="center">
     <el-card class="vc-card" :body-style="{ padding: '0px' }">
-      <router-link
-        :to="{ name: 'sp_detail', params: { id: id, cover_url: cover_url, title: title }}"
-      >
-        <img :src="cover_url" class="image" />
-      </router-link>
+      <img :src="cover_url" class="image" />
       <div class="card-video-title">
         <span>{{title}}</span>
       </div>

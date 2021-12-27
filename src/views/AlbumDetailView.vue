@@ -65,12 +65,23 @@ onMounted(() => {
 <template>
   <el-row class="adv-row" type="flex" justify="center">
     <el-col :span="12">
-      <el-button class="button" type="primary" @click="go_back" size="mini" :icon="Back" circle></el-button>
+      <el-row class="adv-back-button-row" type="flex" justify="left">
+        <el-button
+          class="adv-back-button"
+          type="primary"
+          @click="go_back"
+          size="medium"
+          :icon="Back"
+          circle
+        ></el-button>
+      </el-row>
       <div>
-        <img :src="route.params.cover_url" class="image" />
+        <img :src="route.params.cover_url" class="cover-image" />
       </div>
       <span>{{route.params.title}}</span>
-      <el-button class="button" type="primary" @click="add_to_mpd" size="mini" :icon="Back" circle></el-button>
+      <el-row class="adv-add-button-row" type="flex" justify="center">
+        <el-button class="button" type="primary" @click="add_to_mpd" size="medium">Add to MPD</el-button>
+      </el-row>
     </el-col>
     <el-col :span="12">
       <el-table :data="tracks" style="width: 100%">
@@ -85,6 +96,10 @@ onMounted(() => {
 .adv-row {
   justify-items: center;
 }
+.adv-back-button {
+  margin-left: 0.5rem;
+  margin-top: 0.5rem;
+}
 .bottom {
   margin-top: 13px;
   line-height: 12px;
@@ -95,7 +110,8 @@ onMounted(() => {
 .vc-card {
   margin: 1rem;
 }
-.image {
+.cover-image {
+  margin-top: 1rem;
   width: 25rem;
   height: 25rem;
   object-fit: cover;
