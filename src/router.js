@@ -12,7 +12,7 @@ const routes = [
         path: '/album',
         name: 'sp_detail',
         component: AlbumDetailView,
-    }
+    },
 ]
 
 const router = new createRouter({

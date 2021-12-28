@@ -1,7 +1,4 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
+#![cfg_attr(all(not(debug_assertions), target_os = "windows"), windows_subsystem = "windows")]
 
 mod cmd;
 mod config;
@@ -22,7 +19,9 @@ fn main() {
             cmd::search_spotify,
             cmd::get_spotify_search_result,
             cmd::get_spotify_album_tracks,
-            cmd::add_spotify_tracks_to_mpd
+            cmd::add_spotify_tracks_to_mpd,
+            cmd::search_in_tidal,
+            cmd::add_album_to_mpd
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

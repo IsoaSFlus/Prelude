@@ -75,10 +75,7 @@ impl Server {
         match self
             .state
             .qobuz
-            .auth(
-                self.config.qobuz.email.as_str(),
-                self.config.qobuz.password.as_str(),
-            )
+            .auth(self.config.qobuz.email.as_str(), self.config.qobuz.password.as_str())
             .await
         {
             Ok(_) => {}
@@ -113,25 +110,13 @@ async fn get_track(
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
     let mut rx = if params.get("t").eq(&Some(&"tidal".into())) {
-        let u = state
-            .tidal
-            .get_tacks_file(id.as_str())
-            .await
-            .map_err(|_| "err")?;
+        let u = state.tidal.get_tacks_file(id.as_str()).await.map_err(|_| "err")?;
         url_to_stream(u, &state.qobuz.ua).await.map_err(|_| "err")?
     } else if params.get("t").eq(&Some(&"qobuz".into())) {
-        let u = state
-            .qobuz
-            .get_tacks_file(id.as_str())
-            .await
-            .map_err(|_| "err")?;
+        let u = state.qobuz.get_tacks_file(id.as_str()).await.map_err(|_| "err")?;
         url_to_stream(u, &state.qobuz.ua).await.map_err(|_| "err")?
     } else {
-        state
-            .spotify
-            .get_track_file(id.as_str())
-            .await
-            .map_err(|_| "err")?
+        state.spotify.get_track_file(id.as_str()).await.map_err(|_| "err")?
     };
 
     let stream = async_stream::stream! {
@@ -142,26 +127,19 @@ async fn get_track(
     Ok::<_, &str>(StreamBody::new(stream))
 }
 
-async fn add_album_qo(
-    Extension(state): Extension<Arc<State>>,
-    Path(album_id): Path<String>,
-) -> impl IntoResponse {
-    let _ = state.qobuz.add_album(&album_id).await;
-    StatusCode::OK
+async fn add_album_qo(Extension(state): Extension<Arc<State>>, Path(album_id): Path<String>) -> impl IntoResponse {
+    let a = state.qobuz.get_album(&album_id).await.map_err(|_| "")?;
+    state.mpd.add_album_to_mpd(&a, "qobuz").await.map_err(|_| "")?;
+    Ok::<_, &str>(StatusCode::OK)
 }
 
-async fn add_album_ti(
-    Extension(state): Extension<Arc<State>>,
-    Path(album_id): Path<String>,
-) -> impl IntoResponse {
-    let _ = state.tidal.add_album(&album_id).await;
-    StatusCode::OK
+async fn add_album_ti(Extension(state): Extension<Arc<State>>, Path(album_id): Path<String>) -> impl IntoResponse {
+    let a = state.tidal.get_album(&album_id).await.map_err(|_| "")?;
+    state.mpd.add_album_to_mpd(&a, "tidal").await.map_err(|_| "")?;
+    Ok::<_, &str>(StatusCode::OK)
 }
 
-async fn url_to_stream(
-    u: String,
-    ua: &str,
-) -> anyhow::Result<tokio::sync::mpsc::UnboundedReceiver<Bytes>> {
+async fn url_to_stream(u: String, ua: &str) -> anyhow::Result<tokio::sync::mpsc::UnboundedReceiver<Bytes>> {
     let client = reqwest::Client::builder()
         .user_agent(ua)
         .connect_timeout(tokio::time::Duration::from_secs(10))
@@ -172,11 +150,7 @@ async fn url_to_stream(
     tokio::spawn(async move {
         if u.contains(r#"$Number$.mp4"#) {
             let mut i = 0usize;
-            while let Ok(mut resp) = client
-                .get(u.replace("$Number$", i.to_string().as_str()))
-                .send()
-                .await
-            {
+            while let Ok(mut resp) = client.get(u.replace("$Number$", i.to_string().as_str())).send().await {
                 if resp.status() != 200 {
                     break;
                 }

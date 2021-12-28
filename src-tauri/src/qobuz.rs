@@ -1,4 +1,4 @@
-use crate::server::{Album, Track};
+use crate::server::{Album, Track, self};
 use anyhow::Result;
 use tauri::async_runtime::RwLock;
 
@@ -84,7 +84,7 @@ impl Qobuz {
         Ok(j.pointer("/url").unwrap().as_str().unwrap().into())
     }
 
-    pub async fn add_album(&self, album_id: &str) -> Result<()> {
+    pub async fn get_album(&self, album_id: &str) -> Result<server::Album> {
         let client = reqwest::Client::builder()
             .user_agent(&self.ua)
             .connect_timeout(tokio::time::Duration::from_secs(10))
@@ -127,7 +127,6 @@ impl Qobuz {
             tracks,
         };
         println!("{:?}", album);
-        // self.mpd.add_album_to_mpd(&album, "qobuz").await?;
-        Ok(())
+        Ok(album)
     }
 }

@@ -2,10 +2,12 @@
 import { ref } from "vue";
 
 const props = defineProps({
-  // avatorUrl: String,
   id: String,
   cover_url: String,
-  // upnick: String,
+  hires: {
+    type: Boolean,
+    default: false,
+  },
   title: String,
 });
 </script>
@@ -13,7 +15,9 @@ const props = defineProps({
 <template>
   <el-row type="flex" justify="center">
     <el-card class="vc-card" :body-style="{ padding: '0px' }">
-      <img :src="cover_url" class="image" />
+      <el-badge :hidden="!props.hires" value="Hi" class="hires-badge">
+        <img :src="cover_url" class="image" />
+      </el-badge>
       <div class="card-video-title">
         <span>{{title}}</span>
       </div>
@@ -29,8 +33,12 @@ const props = defineProps({
   justify-content: space-between;
   align-items: center;
 }
+.hires-badge {
+  /* margin: 1rem; */
+}
 .vc-card {
   margin: 1rem;
+  overflow: visible;
 }
 .image {
   width: 16rem;

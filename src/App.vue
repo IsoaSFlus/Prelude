@@ -17,11 +17,11 @@ onMounted(() => {
   <div>
     <div id="main">
       <router-view v-slot="{ Component }">
-        <transition>
-          <keep-alive include="SearchView">
-            <component :is="Component" />
-          </keep-alive>
-        </transition>
+        <!-- <transition> -->
+        <keep-alive :include="['SearchView']">
+          <component :is="Component" />
+        </keep-alive>
+        <!-- </transition> -->
       </router-view>
     </div>
   </div>

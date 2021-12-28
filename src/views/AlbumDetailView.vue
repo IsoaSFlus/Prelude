@@ -1,15 +1,28 @@
+<script>
+export default {
+  name: "AlbumDetailView",
+};
+</script>
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { invoke } from "@tauri-apps/api";
+import FindSameView from "./FindSameView.vue";
 import { Back } from "@element-plus/icons-vue";
 
 const tracks = ref([]);
+const find_same_visible = ref(false);
+const find_same_site = ref("");
 const router = useRouter();
 const route = useRoute();
 
 let go_back = () => {
   router.back();
+};
+
+let find_same = (site) => {
+  find_same_site.value = site;
+  find_same_visible.value = true;
 };
 
 let add_to_mpd = () => {
@@ -80,7 +93,24 @@ onMounted(() => {
       </div>
       <span>{{route.params.title}}</span>
       <el-row class="adv-add-button-row" type="flex" justify="center">
-        <el-button class="button" type="primary" @click="add_to_mpd" size="medium">Add to MPD</el-button>
+        <el-button
+          class="adv-add-button"
+          type="primary"
+          @click="add_to_mpd"
+          size="medium"
+        >Add to MPD</el-button>
+        <el-button
+          class="adv-add-button"
+          type="primary"
+          @click="find_same('tidal')"
+          size="medium"
+        >Find in Tidal</el-button>
+        <el-button
+          class="adv-add-button"
+          type="primary"
+          @click="find_same('qobuz')"
+          size="medium"
+        >Find in Qobuz</el-button>
       </el-row>
     </el-col>
     <el-col :span="12">
@@ -90,6 +120,14 @@ onMounted(() => {
       </el-table>
     </el-col>
   </el-row>
+  <el-dialog
+    v-model="find_same_visible"
+    width="70%"
+    title="Find the same album and add to mpd"
+    destroy-on-close
+  >
+    <find-same-view :site="find_same_site" :keywords="route.params.title"></find-same-view>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -99,6 +137,10 @@ onMounted(() => {
 .adv-back-button {
   margin-left: 0.5rem;
   margin-top: 0.5rem;
+}
+.adv-add-button {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
 }
 .bottom {
   margin-top: 13px;
