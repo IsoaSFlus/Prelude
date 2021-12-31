@@ -4,7 +4,7 @@ export default {
 };
 </script>
 <script setup>
-import { Search } from "@element-plus/icons-vue";
+import { Search, Setting } from "@element-plus/icons-vue";
 import AlbumCard from "../components/AlbumCard.vue";
 import { ref, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api";
@@ -37,9 +37,13 @@ onMounted(() => {});
 </script>
 
 <template>
-  <el-row type="flex" justify="center" class="av-el-row">
-    <el-input class="av-el-input" v-model="input" placeholder="Search"></el-input>
-    <el-button class="button" type="primary" @click="search" size="mini" :icon="Search" circle></el-button>
+  <el-row class="av-el-row">
+    <el-col :span="12" :offset="6" class="text-input-col">
+      <el-input class="av-el-input" v-model="input" @change="search" placeholder="Search"></el-input>
+    </el-col>
+    <el-col :span="2" :offset="4" class="text-input-col">
+      <el-button class="setting-button" size="medium" :icon="Setting" circle></el-button>
+    </el-col>
   </el-row>
   <ul v-infinite-scroll="load_new_albums" class="ac-list">
     <li v-for="a in albums" :key="a" class="ac-list-item">
@@ -63,9 +67,11 @@ onMounted(() => {});
 .button {
   margin-left: 0.5rem;
 }
-.av-el-row {
-  align-items: center;
+.setting-button {
+  /* float: right; */
 }
+ /* .text-input-col {
+    } */
 .ac-list {
   width: 100%;
   display: flex;
