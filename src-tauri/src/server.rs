@@ -1,4 +1,4 @@
-use crate::{mpd::MPD, qobuz::Qobuz, tidal::Tidal};
+use crate::{config::write_config, mpd::MPD, qobuz::Qobuz, tidal::Tidal};
 use axum::{
     body::StreamBody,
     extract::{Extension, Path, Query},
@@ -8,7 +8,8 @@ use axum::{
 };
 use bytes::Bytes;
 use hyper::StatusCode;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, ops::Deref, sync::Arc};
+use tauri::async_runtime::RwLock;
 
 use crate::spotify::Spotify;
 
@@ -35,7 +36,7 @@ pub struct State {
 
 pub struct Server {
     pub state: Arc<State>,
-    config: crate::config::Config,
+    pub config: RwLock<crate::config::Config>,
 }
 
 impl Server {
@@ -56,7 +57,10 @@ impl Server {
             spotify: Spotify::new(&c),
             mpd: MPD::new(&c.mpd_address, &c.bind_address),
         });
-        Self { state, config: c }
+        Self {
+            state,
+            config: RwLock::new(c),
+        }
     }
 
     pub async fn init(self: &Arc<Self>) {
@@ -74,7 +78,13 @@ impl Server {
         });
 
         match self.state.tidal.auth().await {
-            Ok(_) => {}
+            Ok(it) => {
+                if self.config.read().await.tidal.token.is_empty() {
+                    self.config.write().await.tidal.token = it.0;
+                    self.config.write().await.tidal.country = it.1;
+                    let _ = write_config(self.config.read().await.deref()).await;
+                }
+            }
             Err(e) => {
                 println!("{}", e)
             }
@@ -82,7 +92,10 @@ impl Server {
         match self
             .state
             .qobuz
-            .auth(self.config.qobuz.email.as_str(), self.config.qobuz.password.as_str())
+            .auth(
+                self.config.read().await.qobuz.email.as_str(),
+                self.config.read().await.qobuz.password.as_str(),
+            )
             .await
         {
             Ok(_) => {}
@@ -97,11 +110,9 @@ impl Server {
             .route("/add_tidal/:album_id", get(add_album_ti))
             .layer(AddExtensionLayer::new(self.state.clone()));
 
+        let ba = self.config.read().await.bind_address.clone();
         // run it with hyper on localhost:3000
-        axum::Server::bind(&self.config.bind_address.parse().unwrap())
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
+        axum::Server::bind(&ba.parse().unwrap()).serve(app.into_make_service()).await.unwrap();
     }
 }
 

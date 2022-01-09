@@ -21,7 +21,9 @@ fn main() {
             cmd::get_spotify_album_tracks,
             cmd::add_spotify_tracks_to_mpd,
             cmd::search_in_tidal,
-            cmd::add_album_to_mpd
+            cmd::add_album_to_mpd,
+            cmd::get_settings,
+            cmd::write_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

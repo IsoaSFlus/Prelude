@@ -6,10 +6,12 @@ export default {
 <script setup>
 import { Search, Setting } from "@element-plus/icons-vue";
 import AlbumCard from "../components/AlbumCard.vue";
+import SettingView from "../views/SettingView.vue";
 import { ref, onMounted } from "vue";
 import { invoke } from "@tauri-apps/api";
 const input = ref("");
 const albums = ref([]);
+const settings_visible = ref(false);
 
 let search = () => {
   albums.value = [];
@@ -18,6 +20,10 @@ let search = () => {
   }).then(() => {
     load_new_albums();
   });
+};
+
+let open_settings = () => {
+  settings_visible.value = true;
 };
 
 let load_new_albums = () => {
@@ -42,7 +48,13 @@ onMounted(() => {});
       <el-input class="av-el-input" v-model="input" @change="search" placeholder="Search"></el-input>
     </el-col>
     <el-col :span="2" :offset="4" class="text-input-col">
-      <el-button class="setting-button" size="medium" :icon="Setting" circle></el-button>
+      <el-button
+        class="setting-button"
+        size="medium"
+        :icon="Setting"
+        @click="open_settings()"
+        circle
+      ></el-button>
     </el-col>
   </el-row>
   <ul v-infinite-scroll="load_new_albums" class="ac-list">
@@ -55,6 +67,9 @@ onMounted(() => {});
       </router-link>
     </li>
   </ul>
+  <el-dialog v-model="settings_visible" width="90%" title="Settings" destroy-on-close>
+    <setting-view></setting-view>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -70,7 +85,7 @@ onMounted(() => {});
 .setting-button {
   /* float: right; */
 }
- /* .text-input-col {
+/* .text-input-col {
     } */
 .ac-list {
   width: 100%;

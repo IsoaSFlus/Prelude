@@ -1,4 +1,7 @@
-use crate::{server, spotify, tidal};
+use crate::{
+    config::{write_config, Config},
+    server, spotify, tidal,
+};
 use std::{ops::Deref, sync::Arc};
 
 #[tauri::command]
@@ -63,5 +66,16 @@ pub async fn add_album_to_mpd(id: String, tp: String, server: tauri::State<'_, A
         let a = server.state.qobuz.get_album(&id).await.map_err(|e| e.to_string())?;
         server.state.mpd.add_album_to_mpd(&a, &tp).await.map_err(|e| e.to_string())?;
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_settings(server: tauri::State<'_, Arc<crate::server::Server>>) -> Result<Config, String> {
+    Ok(server.config.read().await.clone())
+}
+
+#[tauri::command]
+pub async fn write_settings(c: Config) -> Result<(), String> {
+    write_config(&c).await.map_err(|e| e.to_string())?;
     Ok(())
 }

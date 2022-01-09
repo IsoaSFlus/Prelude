@@ -1,6 +1,5 @@
 use crate::server::{self, Track};
 use anyhow::{anyhow, Result};
-use std::sync::Arc;
 use tokio::{process::Command, sync::RwLock};
 
 struct TidalKey {
@@ -46,9 +45,9 @@ impl Tidal {
         }
     }
 
-    pub async fn auth(&self) -> Result<()> {
+    pub async fn auth(&self) -> Result<(String, String)> {
         if self.key.read().await.is_some() {
-            return Ok(());
+            return Ok(("".into(), "".into()));
         }
         let client = reqwest::Client::builder()
             .user_agent(&self.ua)
@@ -79,6 +78,7 @@ impl Tidal {
             ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
             ("scope", "r_usr+w_usr+w_sub"),
         ];
+        let mut ret = None;
         loop {
             let resp = client
                 .post(format!("{}/token", &self.auth_url))
@@ -96,8 +96,9 @@ impl Tidal {
                 }
                 None => {}
             }
-            let country_code = resp.pointer("/user/countryCode").ok_or(anyhow!("err 3"))?.as_str().unwrap().into();
-            let access_token = resp.pointer("/access_token").ok_or(anyhow!("err 4"))?.as_str().unwrap().into();
+            let country_code: String = resp.pointer("/user/countryCode").ok_or(anyhow!("err 3"))?.as_str().unwrap().into();
+            let access_token: String = resp.pointer("/access_token").ok_or(anyhow!("err 4"))?.as_str().unwrap().into();
+            ret = Some((access_token.clone(), country_code.clone()));
             *self.key.write().await = Some(TidalKey {
                 device_code,
                 country_code,
@@ -105,7 +106,7 @@ impl Tidal {
             });
             break;
         }
-        Ok(())
+        Ok(ret.ok_or(anyhow!("err 5"))?)
     }
 
     pub async fn get_album(&self, album_id: &str) -> Result<server::Album> {
