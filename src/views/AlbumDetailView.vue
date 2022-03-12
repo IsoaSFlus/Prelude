@@ -83,7 +83,7 @@ onMounted(() => {
           class="adv-back-button"
           type="primary"
           @click="go_back"
-          size="medium"
+          size="large"
           :icon="Back"
           circle
         ></el-button>

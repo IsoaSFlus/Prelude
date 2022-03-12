@@ -45,12 +45,12 @@ onMounted(() => {});
 <template>
   <el-row class="av-el-row">
     <el-col :span="12" :offset="6" class="text-input-col">
-      <el-input class="av-el-input" v-model="input" @change="search" placeholder="Search"></el-input>
+      <el-input class="av-el-input" v-model="input" @keyup.enter="search" size="large" placeholder="Search"></el-input>
     </el-col>
     <el-col :span="2" :offset="4" class="text-input-col">
       <el-button
         class="setting-button"
-        size="medium"
+        size="large"
         :icon="Setting"
         @click="open_settings()"
         circle

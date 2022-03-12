@@ -37,4 +37,7 @@ onMounted(() => {
   /* margin-top: 60px; */
   margin: 0 auto;
 }
+.el-input__inner {
+  line-height: 0px !important;
+}
 </style>
