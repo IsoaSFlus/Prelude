@@ -1,5 +1,5 @@
-<script setup>
-import { ref } from "vue";
+<script setup lang="ts">
+// import { ref } from "vue";
 
 const props = defineProps({
   id: String,
@@ -33,9 +33,9 @@ const props = defineProps({
   justify-content: space-between;
   align-items: center;
 }
-.hires-badge {
+/* .hires-badge { */
   /* margin: 1rem; */
-}
+/* } */
 .vc-card {
   margin: 1rem;
   overflow: visible;
