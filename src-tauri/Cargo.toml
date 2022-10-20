@@ -7,7 +7,7 @@ license = ""
 repository = ""
 default-run = "app"
 edition = "2021"
-rust-version = "1.57"
+# rust-version = "1.57"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,16 +20,16 @@ serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.1.1", features = ["api-all"] }
 anyhow = "1"
 indexmap = "1"
-axum = { version = "0.3", features = ["mime"] }
-bytes = "*"
-clap = "2"
+axum = { version = "0.5" }
+bytes = "1.2"
+clap = "4"
 md5 = "0.7"
-chrono = "*"
-regex = "*"
-toml = "*"
+chrono = "0.4"
+regex = "1.6"
+toml = "0.5"
 futures = "0.3"
 base64 = "0.13"
-directories = "4.0"
+directories = "4"
 async-stream = "0.3"
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }

@@ -4,7 +4,7 @@ use axum::{
     extract::{Extension, Path, Query},
     response::IntoResponse,
     routing::get,
-    AddExtensionLayer, Router,
+    Router,
 };
 use bytes::Bytes;
 use hyper::StatusCode;
@@ -108,7 +108,7 @@ impl Server {
             .route("/track/:id", get(get_track))
             .route("/add_qobuz/:album_id", get(add_album_qo))
             .route("/add_tidal/:album_id", get(add_album_ti))
-            .layer(AddExtensionLayer::new(self.state.clone()));
+            .layer(axum::Extension(self.state.clone()));
 
         let ba = self.config.read().await.bind_address.clone();
         // run it with hyper on localhost:3000
